@@ -1,0 +1,132 @@
+
+
+## 2022-10-11
+
+
+# training trce latent ode
+
+    constrain training dataset to ~0-1, positive time (log10) 0-2.5
+
+    z x16 capable of fit
+
+
+        optimise beta and train regime, still room to reduce loss after 1000 iterations
+
+
+    anneal beta from .001 up order magnitude each 100 epochs, keep learn rate 1e-3
+
+    at beta = 1., run 1000 epochs
+
+
+    # latent state analysis
+
+
+        z0 shows strong delay time dependence - initial charge desnity?
+
+            shape shows total charge density
+
+
+        z1 closely matches dependence (vlt, del) of z0
+
+            shape indicates space charge limited extraction? trapped charge density
+
+                mobile free carriers (recombination)?
+
+
+        z7 shows strong voltage dependence, no delay dependence - bias extraction kinetics
+
+            shape shows rate of extraction
+
+            stronger bias depedence at long delay, extraction of relaxed/trapped charge
+
+
+        z2 shows highly linear voltage dependence - no delay dependence
+
+            shape exhibits rc decay time
+
+
+        z4 increase at long delay time, drop at high intensity/bias
+
+            shape early transient magnitude shift, no time shift
+
+            average recombination lifetime? fraction recombination loss
+
+            increase to saturate with applied bias, reduced at long delay time
+
+                spatial separation of carriers under bias, reduced recombination
+
+
+        z5 dependence on intensity, not voltage or delay
+
+            rate of extraction for (z5) early ~100-500ns extraction
+
+            space charge limited extraction (slow RC competitive charge extraction ~100ns)
+
+            slower at increased initial excitation density, only significant at lowest intensity
+
+                non-uniform photogeneration, early spatial redistribution
+
+
+        z6 dependence on voltage, delay
+
+            slight deviation at limits of low charge desnity (int, del)
+
+            rate of extraction for ~1 us time periods
+
+            decrease at high bias, low intensity, long delay
+
+                internal mobile charge reserviour extraction
+
+            increase from no bias to slight bias (otherwise recombine)
+
+                higher bias reduce (carriers pulled to contacts, spatial separation)
+
+
+        z3 almost no impact, blend between z5 and z6 (separation of carrier populations)
+
+            slight separate of early (100ns) vs mid (500ns) vs late (1us) extraction periods
+
+            very slight delay time dep, minimal vlt/int dep
+
+            (low vlt long del ie low internal field) separation of mobile and trapped carriers
+
+                relaxation of carriers into traps, separation of mobile and free carriers
+
+
+# summary latent state dynamics
+
+    z0 - initial (photogenerated less delay time recombination) charge density
+
+    z1 - space charge limited extraction (delay in extraction at high charge density)
+
+    z2 - bias dependent rc decay
+
+    z3 - carrier relaxation, separation of mobile and trapped carriers
+
+    z4 - spatial separation of carriers under bias, reduced recombination
+
+    z5 - non-uniform spatial distribution of initial photogenerated carriers
+
+    z6 - internal mobile charge reserviour extraction, spatial separation to contacts
+
+    z7 - applied bias influence on extraction rate, trap extraction
+
+
+
+## after direct latent state dynamics analysis
+
+    z0 - mobile charge carrier extraction rate, high mobility
+
+    z1 - actual charge extraction rate (space charge limited extraction)
+
+    z2 - contact potential, bias dependent rc decay influenced (contact charging, extraction limit)
+
+    z3 - bulk to surface carrier flux, mobility, carrier relaxation, separation of mobile and trapped carriers
+
+    z4 - internal electron-hole overlap, spatial separation of carriers under bias, reduced recombination
+
+    z5 - uniforminty of spatial distribution, bulk reserviour depletion rate, relaxation, low mobility carriers
+
+    z6 - extraction rate less mobile carriers, trapped charge reserviour extraction, trap mobility
+
+    z7 - RC extraction limit, applied bias influence on early extraction rate, external circuit charge rate

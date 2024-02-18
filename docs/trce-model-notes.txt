@@ -1,0 +1,27 @@
+
+## notes ##
+
+
+    trce transient, extraction effectively complete within 1e-5 s (start 1e-7)
+
+    pvd transient, tracks trce behaviour after 1e-5, interesting behaviour prior
+
+
+
+        scale part 2 pvd by final value part 1 (align transients) before join
+
+            join: interpolate + concat
+
+
+        sample 21, pvd time axis offset +130ns
+
+            subtract 1.3e-7 for comparison to sample set
+
+
+- objectives - study of:
+
+    n-dependent carrier mobilities
+
+    recombination lifetimes
+
+    density of states distribution
