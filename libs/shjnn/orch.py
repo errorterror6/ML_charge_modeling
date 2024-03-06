@@ -68,6 +68,8 @@ def train(func, rec, dec, optim, trajs, times, n_epochs, n_batch, device, beta =
 
     # store for per-batch loss
     loss = []
+    MSEloss = []
+    KLloss = []
 
     # iterate each epoch
     for epoch in range(1, n_epochs+1):
@@ -106,7 +108,7 @@ def train(func, rec, dec, optim, trajs, times, n_epochs, n_batch, device, beta =
 
         # catch early halt of training
         except KeyboardInterrupt:
-            return epoch, loss
+            return epoch, loss, MSEloss, KLloss
 
     # return loss
     return epoch, loss
