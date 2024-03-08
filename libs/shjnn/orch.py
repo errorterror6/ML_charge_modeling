@@ -111,7 +111,7 @@ def train(func, rec, dec, optim, trajs, times, n_epochs, n_batch, device, beta =
             return epoch, loss, MSEloss, KLloss
 
     # return loss
-    return epoch, loss
+    return epoch, loss, MSEloss, KLloss
 
 
 
