@@ -89,6 +89,8 @@ def train(func, rec, dec, optim, trajs, times, n_epochs, n_batch, device, beta =
                 # perform training step, compute loss
                 _loss, _px, _kl = train_step(x_batch, y_batch)
                 loss.append(_loss)
+                MSEloss.append(_px)
+                KLloss.append(_kl)
                 #print(_loss, _px, _kl)
                 print('Epoch {}: Total Loss {:.3f}, KL Loss {:.2f}, Feat. Loss {:.2f}'.format(epoch, _loss, _kl, -_px))
 
