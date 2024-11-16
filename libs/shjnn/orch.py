@@ -88,8 +88,13 @@ def train(func, rec, dec, optim, trajs, times, n_epochs, n_batch, device, beta =
 
                 # perform training step, compute loss
                 _loss, _px, _kl = train_step(x_batch, y_batch)
+                # Change _px and _kl to float
+                _px = float(_px)
+                _kl = float(_kl)
                 loss.append(_loss)
-                #print(_loss, _px, _kl)
+                MSEloss.append(-_px)
+                KLloss.append(_kl)
+                # print(_loss, _px, _kl)
                 print('Epoch {}: Total Loss {:.3f}, KL Loss {:.2f}, Feat. Loss {:.2f}'.format(epoch, _loss, _kl, -_px))
 
                 # save normalised epoch loss
@@ -166,5 +171,3 @@ def load_state(path, func, rec, dec, optim, loss, epochs, dev = 'gpu'):
 
     loss = checkpoint['loss']
     epochs = checkpoint['epochs']
-
-
