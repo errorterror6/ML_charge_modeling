@@ -7,7 +7,7 @@ import shjnn
 
 
 
-def init_shjnn(model_params):
+def init_shjnn(model_params=parameters.model_params):
     """
         inits models - always to CPU.
         args: model_params
@@ -34,6 +34,7 @@ def init_shjnn(model_params):
     model_params['loss'] = loss
     model_params['epochs'] = epochs
     model_params['loss'] = loss
+    #TODO: review
     model_params['MSE_loss'] = loss
     model_params['KL_loss'] = loss
 

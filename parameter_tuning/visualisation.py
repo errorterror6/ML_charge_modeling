@@ -1,10 +1,11 @@
-import os, re, logging, torch, random, savgol_filter, glob
+import os, re, logging, torch, random, glob
 import numpy as np
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import matplotlib.pyplot as plt
 from PIL import Image
 import matplotlib.animation as animation
+from scipy.signal import savgol_filter
 
 import parameters
 import sys
@@ -68,11 +69,12 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # add the final loss value into the title
         plt.title(f'Final Loss: {round(total_loss[-1])}')
         plt.tight_layout()
-        plt.show()
+        # #plt.show()
 
         if save:
             folder = model_params['folder']
             save_folder = f"{folder}/loss_graph/"
+            print("save_folder:" + save_folder)
             if not os.path.exists(save_folder):
                 os.makedirs(save_folder)
             plt.savefig(f"{save_folder}/loss_graph_split.png")
@@ -105,7 +107,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
 
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        #plt.show()
 
         if save:
             folder = model_params['folder']
@@ -245,7 +247,7 @@ def compile_learning_gif(model_params=parameters.model_params, display=True):
     animation_fig = animation.FuncAnimation(fig, update, frames=len(image_array), interval=200, blit=True,repeat_delay=10,)
 
     # Show the animation
-    plt.show()
+    #plt.show()
 
     # animation_fig.save("gifs/animated_GMM.gif")
 
@@ -383,7 +385,7 @@ def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
         
     #plt.xscale('log')
     plt.tight_layout()
-    plt.show()
+    #plt.show()
 
     folder = model_params['folder']
     #if saves folder does not exist create it

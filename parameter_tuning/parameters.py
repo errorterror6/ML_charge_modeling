@@ -45,11 +45,11 @@ model_params = {
     'dec': None,
 
     # training params
-    'total_epochs_train': 4,
-    'epochs_per_train': 2,
+    'total_epochs_train': 50,
+    'epochs_per_train': 5,
     'epochs': 0, # a record of the epochs
     'loss': 0, # loss = KL_loss + MSE loss
-    'loss_thresh': 500,
+    'loss_thresh': 1,
     'MSE_loss': 0,
     'KL_loss': 0,
 
@@ -75,6 +75,32 @@ adaptive_training = {
 # options for data visualisation
 save = False                     # haven't figured this out yet.
 split = False                    #same as above.
+
+# options for grid search
+
+class gridsearch:
+
+    learning_rates = [1e-2]
+    n_batches = [16]
+    latent_dims = [2]
+    betas = [4]
+
+    run_description = "search2"
+
+    data_record = {"learning rate": [],
+                    "n_batch": [],
+                    "latent_dim": [],
+                    "beta": [],
+                    "lowest_loss": []}
+
+    loss_record = {"learning rate": [],
+                    "n_batch": [],
+                    "latent_dim": [],
+                    "beta": [],
+                    "loss": []}
+    
+    excel_folder_created = False
+    excel_folder_path = ""
 
 
 # latent_dim, nhidden, rnn_nhidden, obs_dim, lr, n_batch, beta = get_hyper_params(trajs)

@@ -18,10 +18,7 @@ def training_loop(n_epochs, model_params=parameters.model_params, dataset=parame
     ''' run training loop with save 
         args: n_epochs, model_params, dataset
         return: model_params (updated)
-    '''
-
-    print("Logs: Training: Running training loop")
-    
+    '''    
 
     # beta for beta latent dissentanglement
     #beta = 4.
@@ -60,7 +57,7 @@ def training_loop(n_epochs, model_params=parameters.model_params, dataset=parame
         plt.plot(_MSE_loss, label = 'MSE_loss')
         plt.plot(_KL_loss, label = 'KL_loss')
         plt.legend()
-        plt.show()
+        #plt.show()
 
         # update loss, epochs
         print(type(model_params['loss']), type(_loss))
@@ -77,7 +74,7 @@ def training_loop(n_epochs, model_params=parameters.model_params, dataset=parame
         # plt.plot(model_params['MSE_loss'], label = 'MSE_loss')
         # plt.plot(model_params['KL_loss'], label = 'KL_loss')
         plt.legend()
-        plt.show()
+        #plt.show()
     except:
         model_params['loss'] += model_params['loss'][-1]
         model_params['epochs'] += model_params['epochs'][-1]
@@ -86,7 +83,6 @@ def training_loop(n_epochs, model_params=parameters.model_params, dataset=parame
         print('Except')
         print('loss', model_params['loss'], 'epochs', model_params['epochs'], 'MSE_loss', model_params['MSE_loss'], 'KL_loss', model_params['KL_loss'])
 
-    print("Logs: Training: Finished training loop")
     return model_params
 
 def done_training(model_params=parameters.model_params):
@@ -94,6 +90,7 @@ def done_training(model_params=parameters.model_params):
         args: model_params
         return: bool
     """
+    print("logs: Training: done_training with epochs: " + str(model_params['epochs']) + " out of total epochs: " + str(model_params['total_epochs_train']))
     reach_epoch = model_params['epochs'] >= model_params['total_epochs_train']
     if len(model_params['loss']) < 10:
         reach_loss = False
@@ -101,6 +98,7 @@ def done_training(model_params=parameters.model_params):
         reach_loss = False
     else:
         reach_loss = model_params['loss'][-1] < model_params['loss_thresh']
+    print("logs: Training: done_training: " + str(reach_epoch or reach_loss))
     return  reach_epoch or reach_loss
 
 #chage beta to a dynamic rate
@@ -120,7 +118,7 @@ def update_params(model_params, epochs):
     update_n_epochs(model_params, epochs)
 
 def train(model_params, dataset, grid_search=False, grid_search_name="default"):
-
+    print("logs: Training: Running training")
     print('The model parameters are: ' + str(model_params))
 
     name = model_params['name']
@@ -158,12 +156,13 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         visualisation.plot_training_loss(model_params, save=True, split=True)
     loader.save_model_params(model_params)
     visualisation.compile_learning_gif(model_params, display=False)
-
+    print("logs: Training: Finished training")
     return model_params
 
 def adaptive_run_and_save(model_params, dataset, adaptive_training):
     ''' run and save model with adaptive training '''
     # print out hte adaptive_training parameters
+    print("logs: Training: Running adaptive training")
     print('The adaptive training parameters are: ' + str(adaptive_training))
 
     # extract the epochs
@@ -208,7 +207,7 @@ def adaptive_run_and_save(model_params, dataset, adaptive_training):
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     plt.savefig(f"{save_folder}/adaptive_parameters.png")
-    plt.show()
+    #plt.show()
 
     # for each epoch, learning rate and beta, run the model and save
     for k in range(len(epochs_list)):
@@ -236,12 +235,14 @@ def adaptive_run_and_save(model_params, dataset, adaptive_training):
         if done_training(model_params):
             print('Training is done')
             break
+    print("logs: Training: Finished adaptive training")
 
 def grid_search(model_params):
-    learning_rates = [1e-2]
-    n_batches = [16]
-    latent_dims = [2]
-    betas = [4]
+    print("logs: Training: Running grid search")
+    learning_rates = parameters.gridsearch.learning_rates
+    n_batches = parameters.gridsearch.n_batches
+    latent_dims = parameters.gridsearch.latent_dims
+    betas = parameters.gridsearch.betas
 
 
     # beta never above 4  done
@@ -262,23 +263,15 @@ def grid_search(model_params):
     # latent_dims = [8]
     # betas = [.001, 4,]
 
-    run_description = "search2"
+    run_description = parameters.gridsearch.run_description
 
-    data_record = {"learning rate": [],
-                    "n_batch": [],
-                    "latent_dim": [],
-                    "beta": [],
-                    "lowest_loss": []}
+    data_record = parameters.gridsearch.data_record
     
-    loss_record = {"learning rate": [],
-                   "n_batch": [],
-                   "latent_dim": [],
-                   "beta": [],
-                   "loss": []}
+    loss_record = parameters.gridsearch.loss_record
 
     total_runs = len(learning_rates) * len(n_batches) * len(latent_dims) * len(betas)
-    excel_folder_created = False
-    excel_folder_path = ""
+    excel_folder_created = parameters.gridsearch.excel_folder_created
+    excel_folder_path = parameters.gridsearch.excel_folder_path
 
     
     for lr in learning_rates:
@@ -340,3 +333,4 @@ def grid_search(model_params):
     loss_sheet = pd.ExcelWriter(f'{excel_folder_path}/loss_record.xlsx')
     lf.to_excel(loss_sheet)
     loss_sheet.close()
+    print("logs: Training: Finished grid search")
