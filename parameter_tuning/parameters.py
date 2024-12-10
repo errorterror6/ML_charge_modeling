@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-import dataloader
+import loader
 
 
 

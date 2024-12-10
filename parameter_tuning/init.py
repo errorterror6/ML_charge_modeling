@@ -1,5 +1,5 @@
 import parameters
-import dataloader
+import loader
 
 import sys
 sys.path.append('../libs/')
@@ -43,7 +43,7 @@ def init_shjnn(model_params):
 
 def load_data():
     print("Logs: Init: Initialising data from dataloader")
-    dataloader.load_data()
+    loader.load_data()
     trajs = parameters.dataset['trajs']
     obs_dim = trajs[0].size()[1]
     parameters.model_params['obs_dim'] = obs_dim

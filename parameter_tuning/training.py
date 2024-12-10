@@ -1,6 +1,13 @@
 import torch
 import matplotlib.pyplot as plt
+import numpy as np
+import time, os
+import pandas as pd
 
+
+import init
+import loader
+import visualisation
 import parameters
 import sys
 sys.path.append('../libs/')
@@ -111,3 +118,225 @@ def update_params(model_params, epochs):
     update_beta(model_params, epochs)
     update_lr(model_params, epochs)
     update_n_epochs(model_params, epochs)
+
+def train(model_params, dataset, grid_search=False, grid_search_name="default"):
+
+    print('The model parameters are: ' + str(model_params))
+
+    name = model_params['name']
+    desc = model_params['desc']
+
+    #replace all spaces with _
+    name = name.replace(" ", "_")
+    desc = desc.replace(" ", "_")
+
+    # create folder based on time, name and description
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    folder = './saves/' + desc + '_' + name + '_' + timestr
+    if grid_search:
+        folder = f'./saves/grid_seach/{grid_search_name}/' + desc + '_' + name + '_' + timestr
+        #make parent dirs
+        # if not os.path.exists(f'./saves/grid_seach'):
+        #     os.makedirs(f'./saves/grid_seach')
+        # if not os.path.exists(f'./saves/grid_seach/{grid_search_name}'):
+        #     os.makedirs(f'./saves/grid_seach/{grid_search_name}')
+    model_params['folder'] = folder
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    train_epochs = model_params['epochs_per_train']
+
+    while not done_training(model_params):
+        training_loop(train_epochs, model_params, dataset)
+        print("epochs printout:   ")
+        print(model_params['epochs'])
+        print("loss printout: ")
+        print(model_params['loss'])
+        update_params(model_params, model_params['epochs'])
+        loader.save_random_fit(model_params, dataset, random_samples=False)
+        loader.save_model(model_params)
+        visualisation.plot_training_loss(model_params, save=True, split=True)
+    loader.save_model_params(model_params)
+    visualisation.compile_learning_gif(model_params, display=False)
+
+    return model_params
+
+def adaptive_run_and_save(model_params, dataset, adaptive_training):
+    ''' run and save model with adaptive training '''
+    # print out hte adaptive_training parameters
+    print('The adaptive training parameters are: ' + str(adaptive_training))
+
+    # extract the epochs
+    epochs_list = adaptive_training['epochs']
+    # extract the learning rates
+    lr_list = adaptive_training['lr']
+    # extract the beta
+    beta_list = adaptive_training['beta']
+
+    # update the total epochs to the sum of the list of epochs
+    model_params['total_epochs_train'] = sum(epochs_list)
+
+    # initialization
+    name = model_params['name']
+    desc = 'adaptive run'
+
+    #replace all spaces with _
+    name = name.replace(" ", "_")
+    desc = desc.replace(" ", "_")
+
+    # create folder based on time, name and description
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    folder = './saves/' + desc + '_' + name + '_' + timestr
+    model_params['folder'] = folder
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    init.init_shjnn(model_params)
+
+    # define cumulative epoch counts for plotting
+    cumulative_epochs = np.cumsum(epochs_list)
+    # plot the lr and beta as a function of epoch
+    fig, ax = plt.subplots(1, 2, figsize = (10, 5))
+    ax[0].plot(cumulative_epochs, lr_list, '-o')
+    ax[0].set_xlabel('Epochs')
+    ax[0].set_ylabel('Learning Rate')
+    ax[1].plot(cumulative_epochs, beta_list, '-o')
+    ax[1].set_xlabel('Epochs')
+    ax[1].set_ylabel('Beta')
+    # save the figure
+    folder = model_params['folder']
+    save_folder = f"{folder}/adaptive_parameters/"
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+    plt.savefig(f"{save_folder}/adaptive_parameters.png")
+    plt.show()
+
+    # for each epoch, learning rate and beta, run the model and save
+    for k in range(len(epochs_list)):
+
+        # update the model parameters
+        model_params['lr'] = lr_list[k]
+        model_params['beta'] = beta_list[k]
+        train_epochs = epochs_list[k]
+        update_params(model_params, model_params['epochs'])
+        
+        # conduct training
+        training_loop(train_epochs, model_params, dataset)
+        print("epochs printout:   ")
+        print(model_params['epochs'])
+        print("loss printout: ")
+        print(model_params['loss'])
+        update_params(model_params, model_params['epochs'])
+        loader.save_random_fit(model_params, dataset, random_samples=False)
+        loader.save_model(model_params)
+        loader.save_model_params(model_params)
+        visualisation.plot_training_loss(model_params, save=True ,split=True)
+        visualisation.compile_learning_gif(model_params, display=False)
+
+        # check if the training is done
+        if done_training(model_params):
+            print('Training is done')
+            break
+
+def grid_search(model_params):
+    learning_rates = [1e-2]
+    n_batches = [16]
+    latent_dims = [2]
+    betas = [4]
+
+
+    # beta never above 4  done
+    # latent_dims : 1, 2, 4, 8, 16   done
+    # learning rats: 1e-2, 5e-3, 1e-3, 5e-4, 1e-4    done
+    # ode solver struggles to "converge" when its already close. implement time/loss wrapper that stops the running when reached and output what epoch it reached the limit.
+
+    #check both MSE and KL. KL should be around 1, MSE is dependent on the data. Try to normalise MSE so that it is around KL. feat. loss is MSE
+    # check if kl loss is before or after beta.
+    # could plot the KL loss and the MSE loss on the same graph to compare and see how its training.
+
+    # add training gif for each run. done
+    # save model checkpoints.   done
+    
+
+    # learning_rates = [5e-3, 1e-3]
+    # n_batches = [16]
+    # latent_dims = [8]
+    # betas = [.001, 4,]
+
+    run_description = "search2"
+
+    data_record = {"learning rate": [],
+                    "n_batch": [],
+                    "latent_dim": [],
+                    "beta": [],
+                    "lowest_loss": []}
+    
+    loss_record = {"learning rate": [],
+                   "n_batch": [],
+                   "latent_dim": [],
+                   "beta": [],
+                   "loss": []}
+
+    total_runs = len(learning_rates) * len(n_batches) * len(latent_dims) * len(betas)
+    excel_folder_created = False
+    excel_folder_path = ""
+
+    
+    for lr in learning_rates:
+        for n_batch in n_batches:
+            for latent_dim in latent_dims:
+                for beta in betas:
+                    model_params['lr'] = lr
+                    model_params['n_batch'] = n_batch
+                    model_params['latent_dim'] = latent_dim
+                    model_params['beta'] = beta
+                    model_params['desc'] = f"lr_{lr}_nb_{n_batch}_ld_{latent_dim}_b_{beta}"
+
+                    try:
+                        run_and_save(model_params, parameters.dataset, grid_search=True, grid_search_name=run_description)
+                    except AssertionError:
+                        model_params["loss"].append(-1)
+                    # handle assertion error
+                    
+
+                    #write summary data to excel sheet
+              
+
+                    
+
+                    # append information to data_record
+                    data_record["learning rate"].append(lr)
+                    data_record["n_batch"].append(n_batch)
+                    data_record["latent_dim"].append(latent_dim)
+                    data_record["beta"].append(beta)
+                    loss = model_params['loss']
+                    lowest_loss = min(loss)
+                    data_record["lowest_loss"].append(lowest_loss)
+
+                    # append information to loss_record
+                    loss_record["learning rate"].append(lr)
+                    loss_record["n_batch"].append(n_batch)
+                    loss_record["latent_dim"].append(latent_dim)
+                    loss_record["beta"].append(beta)
+                    loss_record["loss"].append(loss)
+
+                    model_params["epochs"] = 0
+                    model_params["loss"] = 0
+
+    if not excel_folder_created:
+    #create excel sheet
+        folder = model_params['folder']
+        excel_folder_path = f'{folder}/../excel_output'
+        if not os.path.exists(excel_folder_path):
+            os.makedirs(excel_folder_path)
+        excel_folder_created = True
+
+    #write to excel
+    df = pd.DataFrame(data_record)
+    sheet = pd.ExcelWriter(f'{excel_folder_path}/summary.xlsx')
+    df.to_excel(sheet)
+    sheet.close()
+
+    lf = pd.DataFrame(loss_record)
+    loss_sheet = pd.ExcelWriter(f'{excel_folder_path}/loss_record.xlsx')
+    lf.to_excel(loss_sheet)
+    loss_sheet.close()

@@ -9,3 +9,7 @@ saves
 /.venv
 /.venv/
 .venv/
+
+/parameter_tuning/saves/
+/parameter_tuning/saves
+/parameter_tuning/saves/*
