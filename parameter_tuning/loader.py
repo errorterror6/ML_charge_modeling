@@ -336,6 +336,7 @@ def clear_saves():
     #todo change??
     files = glob.glob('saves/*')
     for f in files:
+        os.chmod(f, 0o777)
         os.remove(f)
 
 def check_environment():

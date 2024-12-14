@@ -26,17 +26,13 @@ def init_shjnn(model_params=parameters.model_params):
     epochs = 0
     device
 
+    model_params['epochs'] = epochs
+
     model_params['func'] = func
     model_params['rec'] = rec
     model_params['dec'] = dec
     model_params['optim'] = optim
     model_params['device'] = device
-    model_params['loss'] = loss
-    model_params['epochs'] = epochs
-    model_params['loss'] = loss
-    #TODO: review
-    model_params['MSE_loss'] = loss
-    model_params['KL_loss'] = loss
 
     print("Logs: Init: Finished initialising SHJNN library")
 

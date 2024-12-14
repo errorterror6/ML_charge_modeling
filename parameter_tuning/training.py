@@ -49,39 +49,26 @@ def training_loop(n_epochs, model_params=parameters.model_params, dataset=parame
     # run training for epochs, return loss
     try:
         _epochs, _loss, _MSE_loss, _KL_loss = shjnn.train(func, rec, dec, optim, trajs[:], times[:], n_epochs, n_batch, device, beta)
-        print('Try')
-        print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
-        # plot all three losses
-        plt.figure()
-        plt.plot(_loss, label = 'loss')
-        plt.plot(_MSE_loss, label = 'MSE_loss')
-        plt.plot(_KL_loss, label = 'KL_loss')
-        plt.legend()
-        #plt.show()
+        print('Logs: training: training_loop: Try')
+        # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
 
         # update loss, epochs
-        print(type(model_params['loss']), type(_loss))
-        print(type(model_params['MSE_loss']), type(_MSE_loss))
-        print(type(model_params['KL_loss']), type(_KL_loss))
-        model_params['loss'] += _loss
         model_params['epochs'] += _epochs
-        model_params['MSE_loss'] += _MSE_loss
-        model_params['KL_loss'] += _KL_loss
+        model_params['loss'].append(np.average(_loss))
+        print(f'debug: loss size: {len(model_params['loss'])}')
+        model_params['MSE_loss'].append(np.average(_MSE_loss))
+        model_params['KL_loss'].append(np.average(_KL_loss))
 
-        # plot all three losses again
-        plt.figure()
-        plt.plot(model_params['loss'], label = 'loss')
-        # plt.plot(model_params['MSE_loss'], label = 'MSE_loss')
-        # plt.plot(model_params['KL_loss'], label = 'KL_loss')
-        plt.legend()
-        #plt.show()
     except:
-        model_params['loss'] += model_params['loss'][-1]
+        
         model_params['epochs'] += model_params['epochs'][-1]
-        model_params['MSE_loss'] += model_params['MSE_loss'][-1]
-        model_params['KL_loss'] += model_params['KL_loss'][-1]
-        print('Except')
+        model_params['loss'].append(model_params['loss'][-1])
+        model_params['MSE_loss'].append(model_params['MSE_loss'][-1])
+        model_params['KL_loss'].append(model_params['KL_loss'][-1])
+        print('==================================')
+        print('Logs: training: training_loop: Exception raised, shjnn failed.')
         print('loss', model_params['loss'], 'epochs', model_params['epochs'], 'MSE_loss', model_params['MSE_loss'], 'KL_loss', model_params['KL_loss'])
+        print('==================================')
 
     return model_params
 
@@ -130,9 +117,9 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
 
     # create folder based on time, name and description
     timestr = time.strftime("%Y%m%d-%H%M%S")
-    folder = './saves/' + desc + '_' + name + '_' + timestr
+    folder = './saves/' + timestr + '_' + name + '_' + desc
     if grid_search:
-        folder = f'./saves/grid_seach/{grid_search_name}/' + desc + '_' + name + '_' + timestr
+        folder = f'./saves/grid_seach/{grid_search_name}/' + timestr + '_' + name + '_' + desc
         #make parent dirs
         # if not os.path.exists(f'./saves/grid_seach'):
         #     os.makedirs(f'./saves/grid_seach')
@@ -146,14 +133,10 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
 
     while not done_training(model_params):
         training_loop(train_epochs, model_params, dataset)
-        print("epochs printout:   ")
-        print(model_params['epochs'])
-        print("loss printout: ")
-        print(model_params['loss'])
         update_params(model_params, model_params['epochs'])
         loader.save_random_fit(model_params, dataset, random_samples=False)
         loader.save_model(model_params)
-        visualisation.plot_training_loss(model_params, save=True, split=True)
+    visualisation.plot_training_loss(model_params, save=True, split=True)
     loader.save_model_params(model_params)
     visualisation.compile_learning_gif(model_params, display=False)
     print("logs: Training: Finished training")
@@ -185,7 +168,7 @@ def adaptive_run_and_save(model_params, dataset, adaptive_training):
 
     # create folder based on time, name and description
     timestr = time.strftime("%Y%m%d-%H%M%S")
-    folder = './saves/' + desc + '_' + name + '_' + timestr
+    folder = './saves/' + timestr + '_' + name + '_' + desc
     model_params['folder'] = folder
     if not os.path.exists(folder):
         os.makedirs(folder)

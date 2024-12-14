@@ -18,7 +18,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         MSE_loss = model_params['MSE_loss']
         KL_loss = model_params['KL_loss']
         total_loss = model_params['loss']
-
+        print(f'Debug: total_loss shape: {len(total_loss)} at epoch {model_params["epochs"]}')
         k = 1
         _w = 5
         _h = 2*k
@@ -56,7 +56,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # ax1.plot(train_KL_loss, '-b', alpha=0.8)
 
         # Labels and legend
-        ax.set_xlabel('Iterations')
+        ax.set_xlabel('Epochs')
         ax.set_ylabel('Losses')
 
         # Only call plt.legend() after setting labels for each line plot.
@@ -165,7 +165,8 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
         #_time = np.linspace(-7.8, -4.2, 1000)#/10
         #_time = np.linspace(-6.5+6.6, -4.2+6.6, 1000)#/10
         
-        _time = np.linspace(0, 2.5, 1000)#/10
+        #+1 to account for time bias associated with removing the initial rise.
+        _time = np.linspace(0, 2.5, 1000) + 1#/10
         
         #_time = np.linspace(-7., -4.2, 1000)
         #_time = np.logspace(-7.8, -4.2, 1000)
@@ -192,7 +193,7 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
             
             # plot original and predicted trajectories
             ax[l].plot(_t, _traj[:, l+u]/sc_, '.', alpha = 0.6, color = c)
-            ax[l].plot(_time - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} $\mu J$, {:.1f} V, {:.0e} s'.format(y[i][0], y[i][1], y[i][2]),
+            ax[l].plot(_time - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} J$, {:.1f} V, {:.0e} s'.format(y[i][0], y[i][1], y[i][2]),
                     linewidth = 2, alpha = 0.4, color = c)
 
             
@@ -215,7 +216,8 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
         #if saves folder does not exist create it
         if not os.path.exists(folder):
             os.makedirs(folder)
-        fig.savefig(folder + '/training_epoch_{}.png'.format(epoch), dpi=300)
+        fig.savefig(f"{folder}/training_epoch_{epoch:04d}.png", dpi=300)
+
 
 def compile_learning_gif(model_params=parameters.model_params, display=True):
     # compile gif from png in saves folder
@@ -244,7 +246,7 @@ def compile_learning_gif(model_params=parameters.model_params, display=True):
         return im, 
 
     # Create the animation object
-    animation_fig = animation.FuncAnimation(fig, update, frames=len(image_array), interval=200, blit=True,repeat_delay=10,)
+    animation_fig = animation.FuncAnimation(fig, update, frames=len(image_array), interval=200, blit=True, repeat_delay=5000,)
 
     # Show the animation
     #plt.show()
@@ -372,7 +374,7 @@ def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
         pred_x = pred_x.cpu().numpy()[0]
 
         # plot predicted trajectories
-        ax[0].plot(_time, pred_x[:, 0], '-', label = 'z{}, $\mu$ {:.1f} + {:.1f}'.format(j, np.mean(Z, 0)[j],_z), alpha = 0.6, color = c, linewidth = 2)
+        ax[0].plot(_time, pred_x[:, 0], '-', label = 'z{}, {:.1f} + {:.1f}'.format(j, np.mean(Z, 0)[j],_z), alpha = 0.6, color = c, linewidth = 2)
 
             
     plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')

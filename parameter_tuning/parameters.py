@@ -34,9 +34,9 @@ model_params = {
     'obs_dim': 1,
 
     'latent_dim': 16,
-    'lr': 1e-2,
+    'lr': 1e-3,
     'n_batch': 16,
-    'beta': 4,
+    'beta': 0.1,
 
     'optim': None,
     'device': None,
@@ -46,16 +46,16 @@ model_params = {
 
     # training params
     'total_epochs_train': 50,
-    'epochs_per_train': 5,
-    'epochs': 0, # a record of the epochs
-    'loss': 0, # loss = KL_loss + MSE loss
+    'epochs_per_train': 1,
+    'epochs': [], # a record of the epochs
+    'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 1,
-    'MSE_loss': 0,
-    'KL_loss': 0,
+    'MSE_loss': [],
+    'KL_loss': [],
 
     #labels
     'name': "default",
-    'desc': "default run",
+    'desc': "default_desc",
     'folder': "saves"
 }
 
