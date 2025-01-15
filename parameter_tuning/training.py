@@ -14,7 +14,7 @@ sys.path.append('../libs/')
 import shjnn
 
 
-def training_loop(n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
+def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
     ''' run training loop with save 
         args: n_epochs, model_params, dataset
         return: model_params (updated)
@@ -132,7 +132,12 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
     train_epochs = model_params['epochs_per_train']
 
     while not done_training(model_params):
-        training_loop(train_epochs, model_params, dataset)
+        match parameters.trainer:
+            case 'B-VAE':
+                B_VAE_training_loop(train_epochs, model_params, dataset)
+            case _:
+                print("Error: Invalid trainer, pick from options 'B-VAE'. Exiting.")
+                exit(1)
         update_params(model_params, model_params['epochs'])
         loader.save_random_fit(model_params, dataset, random_samples=False)
         loader.save_model(model_params)
@@ -202,7 +207,13 @@ def adaptive_run_and_save(model_params, dataset, adaptive_training):
         update_params(model_params, model_params['epochs'])
         
         # conduct training
-        training_loop(train_epochs, model_params, dataset)
+        #TODO: review if possible to redirect this to "train" function.
+        match parameters.trainer:
+            case 'B-VAE':
+                B_VAE_training_loop(train_epochs, model_params, dataset)
+            case _:
+                print("Error: Invalid trainer, pick from options 'B-VAE'. Exiting.")
+                exit(1)
         print("epochs printout:   ")
         print(model_params['epochs'])
         print("loss printout: ")
