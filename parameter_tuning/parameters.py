@@ -27,8 +27,9 @@ dataset_PV = {
     'elec_df': r'C:\Users\z5183876\Documents\GitHub\PV-syst-data\Bomen\data_from_server\2021_elec_df.pkl'
     }
 
-#choose between options 'B-VAE'
+#choose between options 'B-VAE', 'RNN',
 trainer = 'B-VAE'
+model = None
 
 #tune hyper-params here.
 model_params = {

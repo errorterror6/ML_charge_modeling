@@ -1,5 +1,6 @@
 import parameters
 import loader
+import rnn
 
 import sys
 sys.path.append('../libs/')
@@ -37,6 +38,12 @@ def init_shjnn(model_params=parameters.model_params):
     print("Logs: Init: Finished initialising SHJNN library")
 
     return model_params
+
+'''
+must be called only after init_shjnn called.
+'''
+def init_RNN(model_params=parameters.model_params):
+    rnn.RNN(model_params['rec']) 
 
 def load_data():
     print("Logs: Init: Initialising data from dataloader")

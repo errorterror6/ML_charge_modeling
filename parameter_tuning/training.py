@@ -10,6 +10,8 @@ import loader
 import visualisation
 import parameters
 import sys
+from rnn import RNN 
+from b_vae import B_VAE
 sys.path.append('../libs/')
 import shjnn
 
@@ -49,7 +51,7 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
     # run training for epochs, return loss
     try:
         _epochs, _loss, _MSE_loss, _KL_loss = shjnn.train(func, rec, dec, optim, trajs[:], times[:], n_epochs, n_batch, device, beta)
-        print('Logs: training: training_loop: Try')
+        print('Logs: training: B_VAE_training_loop: Try')
         # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
 
         # update loss, epochs
@@ -66,8 +68,65 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
         model_params['MSE_loss'].append(model_params['MSE_loss'][-1])
         model_params['KL_loss'].append(model_params['KL_loss'][-1])
         print('==================================')
-        print('Logs: training: training_loop: Exception raised, shjnn failed.')
+        print('Logs: training: B_VAE_training_loop: Exception raised, shjnn failed.')
         print('loss', model_params['loss'], 'epochs', model_params['epochs'], 'MSE_loss', model_params['MSE_loss'], 'KL_loss', model_params['KL_loss'])
+        print('==================================')
+
+    return model_params
+
+def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
+    ''' run training loop with save 
+        args: n_epochs, model_params, dataset
+        return: model_params (updated)
+    '''    
+
+    # beta for beta latent dissentanglement
+    #beta = 4.
+    # beta = .01
+
+    # update learning rate
+    # lr = 1e-3
+
+    lr = model_params['lr']
+    n_batch = model_params['n_batch']
+    beta = model_params['beta']
+    optim = model_params['optim']
+
+
+    for g in optim.param_groups:
+        g['lr'] = lr
+
+    # get data
+    trajs = dataset['trajs']
+    times = dataset['times']
+
+    # get model
+    func = model_params['func']
+    rec = model_params['rec']
+    dec = model_params['dec']
+    device = model_params['device']
+
+    # run training for epochs, return loss
+    try:
+        _epochs, _loss = RNN.train(n_epochs, model_params, dataset)
+
+        print('Logs: training: RNN_training_loop: Try')
+        # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
+
+        # update loss, epochs
+        model_params['epochs'] += _epochs
+        model_params['loss'].append(np.average(_loss))
+        print(f'debug: loss size: {len(model_params['loss'])}')
+
+
+    except:
+        
+        model_params['epochs'] += model_params['epochs'][-1]
+        model_params['loss'].append(model_params['loss'][-1])
+
+        print('==================================')
+        print('Logs: training: RNN_training_loop: Exception raised, shjnn failed.')
+        print('loss', model_params['loss'], 'epochs', model_params['epochs'])
         print('==================================')
 
     return model_params
@@ -135,15 +194,20 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         match parameters.trainer:
             case 'B-VAE':
                 B_VAE_training_loop(train_epochs, model_params, dataset)
+                parameters.model = B_VAE
+            case 'RNN':
+                RNN_training_loop(train_epochs, model_params, dataset)
+                parameters.model = RNN
+                # print("Logs: training: train: debug: loss: ", parameters.model_params['loss'])
             case _:
                 print("Error: Invalid trainer, pick from options 'B-VAE'. Exiting.")
                 exit(1)
         update_params(model_params, model_params['epochs'])
         loader.save_random_fit(model_params, dataset, random_samples=False)
         loader.save_model(model_params)
-    visualisation.plot_training_loss(model_params, save=True, split=True)
+    parameters.model.visualiser.plot_training_loss(model_params, save=True, split=True)
     loader.save_model_params(model_params)
-    visualisation.compile_learning_gif(model_params, display=False)
+    parameters.model.visualiser.compile_learning_gif(model_params, display=False)
     print("logs: Training: Finished training")
     return model_params
 

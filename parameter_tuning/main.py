@@ -20,6 +20,10 @@ if __name__ == '__main__':
         loader.clear_saves()
         print("Logs: Main: Cleared all saves.")
         exit(0)
+
+    parameters.trainer = input("Enter the trainer to use (B-VAE, RNN): ")
+    print("Logs: Main: Using trainer: ", parameters.trainer)
+
     
     #setting up saving path
         
@@ -33,7 +37,10 @@ if __name__ == '__main__':
     
     init.load_data()
     init.init_shjnn(parameters.model_params)
+    init.init_RNN(parameters.model_params)
     training.train(parameters.model_params, parameters.dataset)
+
+
     
     time_end = time.time()
     
