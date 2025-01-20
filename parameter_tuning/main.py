@@ -1,4 +1,4 @@
-
+print("Loading....")
 import loader
 import parameters
 import training
@@ -9,28 +9,20 @@ import time
 
 if __name__ == '__main__':
     
-    #command line options
     
-    if not ((len(sys.argv) == 2) or (len(sys.argv) == 3)) :
-        print("usage: python main.py <name> <desc=none>")
-        print("args given: ", sys.argv)
-        exit(1)
-        
-    if (sys.argv[1] == 'clear'):
+
+    parameters.model_params['name'] = input("Enter a name: ")
+    if (parameters.model_params['name'] == 'clear'):
         loader.clear_saves()
         print("Logs: Main: Cleared all saves.")
         exit(0)
-
+    if len(parameters.model_params['name']) == 0:
+        parameters.model_params['name'] = 'default'
+    parameters.model_params['desc'] = input("Enter a description: ")
     parameters.trainer = input("Enter the trainer to use (B-VAE, RNN): ")
     print("Logs: Main: Using trainer: ", parameters.trainer)
 
-    
-    #setting up saving path
-        
-    parameters.model_params['name'] = sys.argv[1]
-    if(len(sys.argv) == 3): parameters.model_params['desc'] = sys.argv[2]
-    else: parameters.model_params['desc'] = f'epochs_{parameters.model_params["total_epochs_train"]}_beta_{parameters.model_params["beta"]}_ld_{parameters.model_params["latent_dim"]}_batch_{parameters.model_params["n_batch"]}'
-    
+
     #begin training loop
     
     time_start = time.time()

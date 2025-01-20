@@ -12,6 +12,7 @@ import sys
 sys.path.append('../libs/')
 import shjnn
 
+
 def plot_training_loss(model_params, save=False, split=False, plot_total=False, plot_MSE=True, plot_KL=True):
     ''' plot training loss '''
     if split:
