@@ -257,7 +257,7 @@ def load_data(data_out=parameters.dataset):
         #for n in _db ]), (2,0,1))
             for n in _db ]), (0,2,1))
 
-    print(ts.shape, d.shape)
+    print("Logs: Loader: load_data: ts.shape, d.shape: ", ts.shape, d.shape)
 
     ''' compile env. labels '''
 
@@ -269,13 +269,13 @@ def load_data(data_out=parameters.dataset):
     ]
         for n in _db ])
 
-    y.shape
+    print("Logs: loader: load_data, stack shape", y.shape)
 
     # compile trajectories, time as tensors, push to device
     trajs = torch.Tensor(d).to(parameters.device)
     times = torch.Tensor(ts).to(parameters.device)
 
-    print(len(d), d[0].shape, ts[0].shape)
+    print("Logs: loader: load_data, length of trajs, shape of trajs[0], shape of times[0]: ", len(d), d[0].shape, ts[0].shape)
 
     data_out['trajs'] = trajs
     data_out['times'] = times
