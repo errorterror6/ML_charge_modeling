@@ -32,7 +32,7 @@ class RNN:
         # iterate length each trajectory input
         #for t in reversed(range(traj.size(0))):
         # TODO： put the time step into the RNN, unreverse this.
-        for t in reversed(range(traj.size(1))):
+        for t in range(traj.size(1)):
 
             # get trajectory samples in reverse time from final
             #obs = x[t, :].view(1,-1)
@@ -48,7 +48,7 @@ class RNN:
 
         dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
         # TODO: TRAJS should have all of the experimental variables (5 of em)
-        print("Logs: rnn: train: printing trajectories size: ", dataset['trajs'][0].numpy())
+        # print("Logs: rnn: train: printing trajectories size: ", dataset['trajs'][0].numpy())
 
         # split dataset into training, validation
         #train_dataset, val_dataset = torch.utils.data.dataset.random_split(dataset, [90, 10])
