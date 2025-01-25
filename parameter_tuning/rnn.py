@@ -20,15 +20,17 @@ class RNN(nn.Module):
         self.model_params = m
         self.criterion = nn.MSELoss()
         #input : (x_t, y_t) to hidden
+        #TODO: ensure that the starting params of the RNN are the same run to run.
         self.rnn = nn.RNN(
             input_size=2,
             hidden_size=m['nhidden'],
             #use relu + clip_gradient if poor results with tanh
             nonlinearity='tanh',
             )
-        
+        #TODO: encode experimental variables into the hidden layer as init.
         #hidden to output (x_t+1, y_t+1)
         self.h2o = nn.Linear(m['nhidden'], 2)
+        
       
     def forward(self, data):
         _, hidden = self.rnn(data)
@@ -79,7 +81,6 @@ class RNN(nn.Module):
 
         dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
         # TODO: TRAJS should have all of the experimental variables (5 of em)
-        # print("Logs: rnn: train: printing trajectories size: ", dataset['trajs'][0].numpy())
 
         # split dataset into training, validation
         #train_dataset, val_dataset = torch.utils.data.dataset.random_split(dataset, [90, 10])
