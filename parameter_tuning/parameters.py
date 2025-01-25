@@ -42,7 +42,7 @@ model_params = {
 
     'latent_dim': 16,
     'lr': 1e-3,
-    'n_batch': 16,
+    'n_batch': 16,  #batch size
     'beta': 0.1,
 
     'optim': None,
@@ -52,7 +52,7 @@ model_params = {
     'dec': None,
 
     # training params
-    'total_epochs_train': 50,
+    'total_epochs_train': 1,
     'epochs_per_train': 1,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss

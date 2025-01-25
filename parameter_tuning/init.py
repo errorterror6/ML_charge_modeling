@@ -43,7 +43,7 @@ def init_shjnn(model_params=parameters.model_params):
 must be called only after init_shjnn called.
 '''
 def init_RNN(model_params=parameters.model_params):
-    rnn.RNN(model_params['rec']) 
+    rnn.RNN(model_params) 
 
 def load_data():
     print("Logs: Init: Initialising data from dataloader")

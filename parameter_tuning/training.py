@@ -108,7 +108,8 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
 
     # run training for epochs, return loss
     try:
-        _epochs, _loss = RNN.train(n_epochs, model_params, dataset)
+        rnn = RNN(model_params)
+        _epochs, _loss = rnn.train(n_epochs, model_params=model_params, dataset=dataset)
 
         print('Logs: training: RNN_training_loop: Try')
         # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
