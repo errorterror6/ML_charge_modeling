@@ -99,7 +99,8 @@ def make_train_step(func, rec, dec, optim, device, noise_std = 0.3, beta = 1.0):
 
         # log-normal probability density function over samples, prediction with noise
         logpx = log_normal_pdf(traj, pred_x, noise_logvar).squeeze().sum(-1)#.sum(-1)
-
+        #TODO: experimental
+        logpx = logpx / traj.size(0)
         #print('loss_px', logpx.shape, logpx)
 
 

@@ -77,7 +77,7 @@ def train(func, rec, dec, optim, trajs, times, n_epochs, n_batch, device, beta =
         try:
 
             epoch_loss = 0
-
+            num_batches = 0
             # get batch data from dataloader
             for x_batch, y_batch in train_loader:
 
@@ -95,14 +95,16 @@ def train(func, rec, dec, optim, trajs, times, n_epochs, n_batch, device, beta =
                 MSEloss.append(-_px)
                 KLloss.append(_kl)
                 # print(_loss, _px, _kl)
+                
                 print('Epoch {}: Total Loss {:.3f}, KL Loss {:.2f}, Feat. Loss {:.2f}'.format(epoch, _loss, _kl, -_px))
-
                 # save normalised epoch loss
+                num_batches += 1
                 epoch_loss += _loss
-            epoch_loss /= n
+            #TODO: experimental, was: epoch_loss /= n
+            epoch_loss /= num_batches  # display average loss per epoch, total
 
             # display average loss per epoch, total
-            print('Epoch {} : {:.2f}, {:.2f}'.format(epoch, epoch_loss, np.median(loss)/n_batch))
+            print('Epoch {} : average: {:.2f}, median: {:.2f}'.format(epoch, epoch_loss, np.median(loss)))
 
 
             if save_ckpt is not None:
