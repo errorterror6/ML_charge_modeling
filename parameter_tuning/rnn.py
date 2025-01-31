@@ -19,7 +19,7 @@ class RNN(nn.Module):
         
         self.model_params = m
         self.criterion = nn.MSELoss()
-        #input : (x_t, y_t) to hidden
+        #input : (y_t, time_t) to hidden
         #TODO: ensure that the starting params of the RNN are the same run to run.
         self.rnn = nn.RNN(
             input_size=2,
@@ -28,7 +28,7 @@ class RNN(nn.Module):
             nonlinearity='tanh',
             )
         #TODO: encode experimental variables into the hidden layer as init.
-        #hidden to output (x_t+1, y_t+1)
+        #hidden to output (y_t+1, time_t+1)
         self.h2o = nn.Linear(m['nhidden'], 2)
         
       
@@ -44,18 +44,28 @@ class RNN(nn.Module):
 
     def train_step(self, traj, time):
         self.rnn.train()
-        # iterate length each trajectory input
-        for t in range(traj.size(1)):
-            #concantenate one sample of trajectory and time to 2d input tensor
-            #creates a 2d tensor of shape (n_batch, 2)
+        total_loss = 0  # Accumulate loss over all time steps
+
+        # Initialize hidden state (if using a vanilla RNN, LSTM, or GRU)
+        hidden = self.rnn.init_hidden(traj.size(0))  # Batch size is traj.size(0)
+
+        # Iterate over each time step in the trajectory
+        for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
+            # Concatenate trajectory and time at each time step
             obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1)
 
+            # Run trajectory through the RNN
+            out, hidden = self.forward(obs, hidden)  # Pass hidden state
 
-            # run trajectory through recog net
-            out = self.forward(obs)
-        #TODO: the criterion should be assessed on some combination of the output, not just a single sample.
-        loss = self.criterion(out, obs)
-        return loss
+            # Prepare the target (next time step's values)
+            target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1)
+
+            # Compute the loss
+            loss = self.criterion(out, target)
+            total_loss += loss  # Accumulate loss
+
+        # Return the average loss over all time steps
+        return total_loss / (traj.size(1) - 1)
 
     def eval_step(traj, time):
         with torch.no_grad():
@@ -77,8 +87,11 @@ class RNN(nn.Module):
             loss = RNN.criterion(out, obs)
         return loss
     
+    '''
+    runs the training loop for n_epochs times where n_epochs is the "epochs per train".
+    '''
     def train(self, n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
-
+        
         dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
         # TODO: TRAJS should have all of the experimental variables (5 of em)
 

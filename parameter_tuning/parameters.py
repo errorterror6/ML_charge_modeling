@@ -52,6 +52,7 @@ model_params = {
     'dec': None,
 
     # training params
+    # TODO: doesn't make too much sense for separate epochs per train and total epochs.
     'total_epochs_train': 1,
     'epochs_per_train': 1,
     'epochs': [], # a record of the epochs
