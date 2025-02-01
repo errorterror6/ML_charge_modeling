@@ -53,8 +53,8 @@ model_params = {
 
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
-    'total_epochs_train': 1,
-    'epochs_per_train': 1,
+    'total_epochs_train': 10,
+    'epochs_per_train': 5,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 1,

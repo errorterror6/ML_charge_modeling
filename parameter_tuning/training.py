@@ -56,8 +56,9 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
 
         # update loss, epochs
         model_params['epochs'] += _epochs
+        print(f'debug: printing out _epochs: {_epochs}')
         model_params['loss'].append(np.average(_loss))
-        print(f'debug: loss size: {len(model_params['loss'])}')
+        print(f'debug: printing out epochs: {model_params["epochs"]}')
         model_params['MSE_loss'].append(np.average(_MSE_loss))
         model_params['KL_loss'].append(np.average(_KL_loss))
 
@@ -109,7 +110,7 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
     # run training for epochs, return loss
     try:
         rnn = RNN(model_params)
-        _epochs, _loss = rnn.train(n_epochs, model_params=model_params, dataset=dataset)
+        _epochs, _loss, _, _ = rnn.train(n_epochs, model_params=model_params, dataset=dataset)
 
         print('Logs: training: RNN_training_loop: Try')
         # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
