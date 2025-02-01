@@ -122,10 +122,6 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
 
 
     except:
-        
-        model_params['epochs'] += model_params['epochs'][-1]
-        model_params['loss'].append(model_params['loss'][-1])
-
         print('==================================')
         print('Logs: training: RNN_training_loop: Exception raised, shjnn failed.')
         print('loss', model_params['loss'], 'epochs', model_params['epochs'])

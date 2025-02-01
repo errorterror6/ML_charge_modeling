@@ -26,14 +26,19 @@ class RNN(nn.Module):
             hidden_size=m['nhidden'],
             #use relu + clip_gradient if poor results with tanh
             nonlinearity='tanh',
+            device=m['device'],
+            batch_first=True
             )
         #TODO: encode experimental variables into the hidden layer as init.
         #hidden to output (y_t+1, time_t+1)
         self.h2o = nn.Linear(m['nhidden'], 2)
+
+    def init_hidden(self, batch_size):
+        return torch.zeros(1, batch_size, self.model_params['nhidden'])
         
       
-    def forward(self, data):
-        _, hidden = self.rnn(data)
+    def forward(self, data, hidden):
+        _, hidden = self.rnn(data, hidden)
         output = self.h2o(hidden)
         return output
 
@@ -43,17 +48,22 @@ class RNN(nn.Module):
         
 
     def train_step(self, traj, time):
+        """
+        trains a single epoch, composed on batches.
+        """
         self.rnn.train()
         total_loss = 0  # Accumulate loss over all time steps
 
         # Initialize hidden state (if using a vanilla RNN, LSTM, or GRU)
-        hidden = self.rnn.init_hidden(traj.size(0))  # Batch size is traj.size(0)
+        hidden = self.init_hidden(traj.size(0))  # Batch size is traj.size(0)
+        # one sequence at a time.
 
         # Iterate over each time step in the trajectory
         for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
             # Concatenate trajectory and time at each time step
-            obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1)
-
+            obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1).unsqueeze(1)
+            print("debug: Input shape:", obs.shape)
+            print("debug: Hidden shape:", hidden.shape)
             # Run trajectory through the RNN
             out, hidden = self.forward(obs, hidden)  # Pass hidden state
 
@@ -92,21 +102,24 @@ class RNN(nn.Module):
         # Return the average loss over all time steps
         return total_loss / (traj.size(1) - 1)
     
-    """ runs the training loop for n_epochs times where n_epochs is the "epochs per train".
-    Arguments:
-    ----------
-    n_epochs: number of epochs to train for.
-    model_params: dictionary of model parameters.
-    dataset: dictionary of dataset to train on.
-    ----------
-    Returns:
-    ----------
-    n_epochs: number of epochs trained for (equal to n_epochs).
-    total_loss_history: equal to MSE loss (below).
-    MSE_loss_history: list of MSE loss.
-    KL_loss_history: hardcoded to list of 0 (NA).
-    """
+    
     def train(self, n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
+        """
+        Runs the training loop for n_epochs times where n_epochs is the "epochs per train".
+
+        Arguments:
+        ----------
+        n_epochs: number of epochs to train for.
+        model_params: dictionary of model parameters.
+        dataset: dictionary of dataset to train on.
+
+        Returns:
+        --------
+        n_epochs: number of epochs trained for (equal to n_epochs).
+        total_loss_history: equal to MSE loss (below).
+        MSE_loss_history: list of MSE loss.
+        KL_loss_history: hardcoded to list of 0 (NA).
+        """
         # Initialize dataset
         dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
 
@@ -156,6 +169,10 @@ class RNN(nn.Module):
                 
             except KeyboardInterrupt:
                 print("Training interrupted by user.")
+                return epoch, val_loss_history, val_loss_history, KL_loss_history
+            
+            except Exception as e:
+                print(f"rnn: train: except: Error: {e}")
                 return epoch, val_loss_history, val_loss_history, KL_loss_history
 
         # Return final epoch and loss histories
