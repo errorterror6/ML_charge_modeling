@@ -38,9 +38,9 @@ class RNN(nn.Module):
         
       
     def forward(self, data, hidden):
-        _, hidden = self.rnn(data, hidden)
-        output = self.h2o(hidden)
-        return output
+        _, h_t = self.rnn(data, hidden)
+        output = self.h2o(h_t)
+        return output, h_t
 
     #clips gradient to +-1 to prevent exploding gradients when using reLu
     def clip_gradient(self, max_norm=1):
