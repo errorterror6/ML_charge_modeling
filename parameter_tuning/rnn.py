@@ -1,6 +1,7 @@
 import parameters
 from torch import nn
 import torch, random, glob, os
+from torch.utils.data import DataLoader, TensorDataset
 import visualisation
 import matplotlib.pyplot as plt
 import numpy as np
@@ -55,17 +56,25 @@ class RNN(nn.Module):
         total_loss = 0  # Accumulate loss over all time steps
 
         # Initialize hidden state (if using a vanilla RNN, LSTM, or GRU)
-        hidden = self.init_hidden(traj.size(0))  # Batch size is traj.size(0)
+        
+        try:
+            hidden = self.init_hidden(traj.size(0))  # Batch size is traj.size(0)
+        except Exception as e:
+            print(f"rnn: train_step: hidden except: Error: {e}")
+            return 1
         # one sequence at a time.
 
         # Iterate over each time step in the trajectory
         for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
             # Concatenate trajectory and time at each time step
             obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1).unsqueeze(1)
-            print("debug: Input shape:", obs.shape)
-            print("debug: Hidden shape:", hidden.shape)
+
             # Run trajectory through the RNN
-            out, hidden = self.forward(obs, hidden)  # Pass hidden state
+            try:
+                out, hidden = self.forward(obs, hidden)  # Pass hidden state
+            except Exception as e:
+                print(f"rnn: train_step: except: Error: {e}")
+                return 1
 
             # Prepare the target (next time step's values)
             target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1)
@@ -78,29 +87,43 @@ class RNN(nn.Module):
         return total_loss / (traj.size(1) - 1)
 
     def eval_step(self, traj, time):
-        self.rnn.eval()
-        total_loss = 0  # Accumulate loss over all time steps
+        try:
+            self.rnn.eval()
+            total_loss = 0  # Accumulate loss over all time steps
 
-        # Initialize hidden state (if using a vanilla RNN, LSTM, or GRU)
-        hidden = self.rnn.init_hidden(traj.size(0))  # Batch size is traj.size(0)
+            # Initialize hidden state (if using a vanilla RNN, LSTM, or GRU)
+            
+            try:
+                hidden = self.init_hidden(traj.size(0))  # Batch size is traj.size(0)
+            except Exception as e:
+                print(f"rnn: train_step: hidden except: Error: {e}")
+                return 1
+            # one sequence at a time.
 
-        # Iterate over each time step in the trajectory
-        for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
-            # Concatenate trajectory and time at each time step
-            obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1)
+            # Iterate over each time step in the trajectory
+            for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
+                # Concatenate trajectory and time at each time step
+                obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1).unsqueeze(1)
 
-            # Run trajectory through the RNN
-            out, hidden = self.forward(obs, hidden)  # Pass hidden state
+                # Run trajectory through the RNN
+                try:
+                    out, hidden = self.forward(obs, hidden)  # Pass hidden state
+                except Exception as e:
+                    print(f"rnn: train_step: except: Error: {e}")
+                    return 1
 
-            # Prepare the target (next time step's values)
-            target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1)
+                # Prepare the target (next time step's values)
+                target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1)
 
-            # Compute the loss
-            loss = self.criterion(out, target)
-            total_loss += loss  # Accumulate loss
+                # Compute the loss
+                loss = self.criterion(out, target)
+                total_loss += loss  # Accumulate loss
 
-        # Return the average loss over all time steps
-        return total_loss / (traj.size(1) - 1)
+            # Return the average loss over all time steps
+            return total_loss / (traj.size(1) - 1)
+        except Exception as e:
+            print(f"rnn: eval_step: except: Error: {e}")
+            return 1
     
     
     def train(self, n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
@@ -121,16 +144,29 @@ class RNN(nn.Module):
         KL_loss_history: hardcoded to list of 0 (NA).
         """
         # Initialize dataset
-        dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
+        data = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
 
         # Split dataset into training and validation sets
-        train_size = int(0.9 * len(dataset))  # 90% training, 10% validation
-        val_size = len(dataset) - train_size
-        train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+        # TODO: this is technically a good idea but the dataset produces 9 mini-batches in total which makes this split not viable.
+        # good to look into this in the future
+        # train_size = int(0.9 * len(data))  # 90% training, 10% validation
+        # val_size = len(data) - train_size
+        # train_dataset, val_dataset = torch.utils.data.random_split(data, [train_size, val_size])
+        
+        #TODO: temporary code addressing the above
+        train_dataset = data
 
         # Initialize data loaders
-        train_loader = shjnn.DataLoader(train_dataset, batch_size=model_params['n_batch'], shuffle=True, drop_last=True)
-        val_loader = shjnn.DataLoader(val_dataset, batch_size=model_params['n_batch'], shuffle=False, drop_last=True)
+        train_loader = DataLoader(train_dataset, batch_size=model_params['n_batch'], shuffle=True, drop_last=True)
+        # TODO: begin temporary code. Extract the first batch
+        first_batch = next(iter(train_loader))
+        inputs, targets = first_batch
+
+        # Create val_loader
+        val_dataset = TensorDataset(inputs, targets)
+        val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+        #TODO: part of the above TODO's. above line of code is temporary fix.
+        # val_loader = shjnn.DataLoader(val_dataset, batch_size=model_params['n_batch'], shuffle=False, drop_last=True)
 
         # Initialize loss history
         val_loss_history = []
@@ -160,6 +196,8 @@ class RNN(nn.Module):
                         epoch_val_loss += _loss.item()  # Accumulate batch loss
 
                 # Compute average validation loss for the epoch
+                print(f"debug: rnn : train_loader len: {len(train_loader)}")
+                print(f"debug: rnn : val_loader len: {len(val_loader)}")
                 epoch_val_loss /= len(val_loader)
                 val_loss_history.append(epoch_val_loss)
                 KL_loss_history.append(0)
@@ -175,6 +213,9 @@ class RNN(nn.Module):
                 print(f"rnn: train: except: Error: {e}")
                 return epoch, val_loss_history, val_loss_history, KL_loss_history
 
+        # print average loss:
+        print(f"Logs: rnn: train: Average loss: {np.mean(val_loss_history)} at epoch {model_params['epochs'] + epoch}")
+        
         # Return final epoch and loss histories
         return n_epochs, val_loss_history, val_loss_history, 0
     

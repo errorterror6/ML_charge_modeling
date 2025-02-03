@@ -121,9 +121,9 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
         print(f'debug: loss size: {len(model_params['loss'])}')
 
 
-    except:
+    except Exception as e:
         print('==================================')
-        print('Logs: training: RNN_training_loop: Exception raised, shjnn failed.')
+        print('Logs: training: RNN_training_loop: Exception raised, rnn failed with error: ', e)
         print('loss', model_params['loss'], 'epochs', model_params['epochs'])
         print('==================================')
 
