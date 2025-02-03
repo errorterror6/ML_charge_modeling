@@ -35,7 +35,7 @@ class RNN(nn.Module):
         self.h2o = nn.Linear(m['nhidden'], 2)
 
     def init_hidden(self, batch_size):
-        return torch.zeros(1, batch_size, self.model_params['nhidden'])
+        return torch.zeros(sequence_length, batch_size, self.model_params['nhidden'])
         
       
     def forward(self, data, hidden):
@@ -50,7 +50,7 @@ class RNN(nn.Module):
 
     def train_step(self, traj, time):
         """
-        trains a single epoch, composed on batches.
+        trains a single batch, composed of samples
         """
         self.rnn.train()
         total_loss = 0  # Accumulate loss over all time steps
@@ -65,19 +65,25 @@ class RNN(nn.Module):
         # one sequence at a time.
 
         # Iterate over each time step in the trajectory
+        # TODO: remove for loop
         for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
             # Concatenate trajectory and time at each time step
+            # TODO: do the concantenation above the loop.
             obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1).unsqueeze(1)
-
+            # shape: 16, sequence length, data
+            print(f"obs shape: {obs.shape}")
             # Run trajectory through the RNN
             try:
                 out, hidden = self.forward(obs, hidden)  # Pass hidden state
+                # print(f"logs: rnn: train_step: obs: {obs}")
+                # print(f"logs: rnn: train_step: out: {out}")
             except Exception as e:
                 print(f"rnn: train_step: except: Error: {e}")
                 return 1
 
             # Prepare the target (next time step's values)
-            target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1)
+            # TODO: pulled above the loop
+            target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1).unsqueeze(1)
 
             # Compute the loss
             loss = self.criterion(out, target)
@@ -113,7 +119,7 @@ class RNN(nn.Module):
                     return 1
 
                 # Prepare the target (next time step's values)
-                target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1)
+                target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1).unsqueeze(1)
 
                 # Compute the loss
                 loss = self.criterion(out, target)
@@ -196,8 +202,6 @@ class RNN(nn.Module):
                         epoch_val_loss += _loss.item()  # Accumulate batch loss
 
                 # Compute average validation loss for the epoch
-                print(f"debug: rnn : train_loader len: {len(train_loader)}")
-                print(f"debug: rnn : val_loader len: {len(val_loader)}")
                 epoch_val_loss /= len(val_loader)
                 val_loss_history.append(epoch_val_loss)
                 KL_loss_history.append(0)
