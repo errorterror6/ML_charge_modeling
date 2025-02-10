@@ -108,24 +108,16 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
     device = model_params['device']
 
     # run training for epochs, return loss
-    try:
-        rnn = RNN(model_params)
-        _epochs, _loss, _, _ = rnn.train(n_epochs, model_params=model_params, dataset=dataset)
+    rnn = RNN(model_params)
+    _epochs, _loss, _, _ = rnn.train(n_epochs, model_params=model_params, dataset=dataset)
 
-        print('Logs: training: RNN_training_loop: Try')
-        # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
+    print('Logs: training: RNN_training_loop: Try')
+    # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
 
-        # update loss, epochs
-        model_params['epochs'] += _epochs
-        model_params['loss'].append(np.average(_loss))
-        print(f'debug: loss size: {len(model_params['loss'])}')
-
-
-    except Exception as e:
-        print('==================================')
-        print('Logs: training: RNN_training_loop: Exception raised, rnn failed with error: ', e)
-        print('loss', model_params['loss'], 'epochs', model_params['epochs'])
-        print('==================================')
+    # update loss, epochs
+    model_params['epochs'] += _epochs
+    model_params['loss'].append(np.average(_loss))
+    print(f'debug: loss size: {len(model_params['loss'])}')
 
     return model_params
 
@@ -195,7 +187,7 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
                 parameters.model = B_VAE
             case 'RNN':
                 RNN_training_loop(train_epochs, model_params, dataset)
-                parameters.model = RNN
+
                 # print("Logs: training: train: debug: loss: ", parameters.model_params['loss'])
             case _:
                 print("Error: Invalid trainer, pick from options 'B-VAE'. Exiting.")
@@ -205,8 +197,8 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         # loader.save_model(model_params)
     parameters.model.visualiser.plot_training_loss(model_params, save=True, split=True)
     # loader.save_model_params(model_params)
-    parameters.model.visualiser.display_random_fit(model_params, dataset, show=False)
-    parameters.model.visualiser.compile_learning_gif(model_params, display=False)
+    # parameters.model.visualiser.display_random_fit(show=False)
+    # parameters.model.Visualiser.compile_learning_gif(model_params, display=False)
     print("logs: Training: Finished training")
     return model_params
 

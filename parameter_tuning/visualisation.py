@@ -103,7 +103,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         plt.yscale('log')
         #plt.xscale('log')
 
-        plt.xlabel('Iterations')
+        plt.xlabel('Epochs')
         plt.ylabel('Loss')
 
         plt.legend()

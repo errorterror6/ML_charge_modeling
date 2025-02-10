@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import visualisation
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import random
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
@@ -32,107 +33,121 @@ class RNN(nn.Module):
             )
         #TODO: encode experimental variables into the hidden layer as init.
         #hidden to output (y_t+1, time_t+1)
+        self.h2h = nn.Linear(m['nhidden'], m['nhidden'])
         self.h2o = nn.Linear(m['nhidden'], 2)
+        self.loss_fn = torch.nn.MSELoss()
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+
+        #visualiser
+        self.visualiser = self.Visualiser(self)
+
+
 
     def init_hidden(self, batch_size):
-        return torch.zeros(sequence_length, batch_size, self.model_params['nhidden'])
+        d = 1
+        return torch.zeros(d, batch_size, self.model_params['nhidden'])
         
       
     def forward(self, data, hidden):
         _, h_t = self.rnn(data, hidden)
-        output = self.h2o(h_t)
+        h2 = self.h2h(h_t)
+        output = self.h2o(h2)
         return output, h_t
 
     #clips gradient to +-1 to prevent exploding gradients when using reLu
     def clip_gradient(self, max_norm=1):
         nn.utils.clip_grad_norm_(self.model.parameters(), max_norm)
-        
+
+    def forward_step(self, obs, train=True):
+        #obs is of shape [batch, seq_len, total_features]
+        #ypically 16, 70, 2
+        try:
+            hidden = self.init_hidden(obs.size(0))  # obs.size(0) is the batch size
+        except Exception as e:
+            print(f"rnn: train_step: hidden initialization error: {e}")
+            return 1
+
+        seq_len = obs.size(1)
+        losses = []  # List to accumulate losses for each time step
+        predictions = []  # (Optional) store predictions if needed
+
+        # Loop over time steps using teacher forcing.
+        # For t = 0 to seq_len - 2:
+        #   - Use obs[:, t, :] as input.
+        #   - Predict obs[:, t+1, :].
+        for t in range(seq_len - 1):
+            # Prepare current input: shape [batch, 1, features]
+            current_input = obs[:, t, :].unsqueeze(1)
+
+            # Forward pass for a single time step
+            try:
+                out, hidden = self.forward(current_input, hidden)
+                # Expected out shape: [batch, 1, output_dim]
+            except KeyboardInterrupt:
+                print("Training interrupted by user.")
+                exit(1)
+
+            # The target for this time step is the next observation in the sequence.
+            target = obs[:, t + 1, :].unsqueeze(1)
+            # Accumulate the loss (using your chosen loss function, e.g., MSELoss)
+            loss = self.loss_fn(out, target.permute(1, 0, 2))
+            losses.append(loss)
+            predictions.append(out)
+
+        avg_loss = torch.stack(losses).mean()
+        if train:
+        # Backpropagation and optimizer step
+            self.optimizer.zero_grad()
+            avg_loss.backward()
+            self.optimizer.step()
+
+        return avg_loss.item(), predictions
 
     def train_step(self, traj, time):
         """
-        trains a single batch, composed of samples
+        Trains a single batch by making one-step-ahead predictions.
+        
+        For each time step t in the sequence (except the last one), the RNN is fed the observation
+        at time t and outputs a prediction for time t+1. The loss is computed by comparing the prediction
+        with the actual observation at time t+1.
+        
+        Args:
+            traj (Tensor): The trajectory data, shape [batch, seq_len, traj_features].
+            time (Tensor): The time data, shape [batch, seq_len, time_features].
+        
+        Returns:
+            float: The average loss over the sequence.
         """
         self.rnn.train()
-        total_loss = 0  # Accumulate loss over all time steps
-
-        # Initialize hidden state (if using a vanilla RNN, LSTM, or GRU)
         
-        try:
-            hidden = self.init_hidden(traj.size(0))  # Batch size is traj.size(0)
-        except Exception as e:
-            print(f"rnn: train_step: hidden except: Error: {e}")
-            return 1
-        # one sequence at a time.
+        # Combine trajectory and time features.
+        # Resulting obs shape: [batch, seq_len, total_features]
+        obs = torch.cat((traj, time), dim=-1)
+        loss, _ = self.forward_step(obs)
+        return loss
 
-        # Iterate over each time step in the trajectory
-        # TODO: remove for loop
-        for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
-            # Concatenate trajectory and time at each time step
-            # TODO: do the concantenation above the loop.
-            obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1).unsqueeze(1)
-            # shape: 16, sequence length, data
-            print(f"obs shape: {obs.shape}")
-            # Run trajectory through the RNN
-            try:
-                out, hidden = self.forward(obs, hidden)  # Pass hidden state
-                # print(f"logs: rnn: train_step: obs: {obs}")
-                # print(f"logs: rnn: train_step: out: {out}")
-            except Exception as e:
-                print(f"rnn: train_step: except: Error: {e}")
-                return 1
-
-            # Prepare the target (next time step's values)
-            # TODO: pulled above the loop
-            target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1).unsqueeze(1)
-
-            # Compute the loss
-            loss = self.criterion(out, target)
-            total_loss += loss  # Accumulate loss
+    def eval_step(self, traj, time, batch_input=True):
+        """
+        runs the RNN in evaluation mode.
+        returns: loss, prediction, target
+        """
+        #TODO: change so that eval step only runs one of the batches...
+       
+        self.rnn.eval()
+        # Combine trajectory and time features.
+        # Resulting obs shape: [batch, seq_len, total_features]
+        obs = torch.cat((traj, time), dim=-1)
+        #get only one batch
+        if batch_input:
+            obs = obs[0].unsqueeze(0)
+        else:
+            obs = obs.unsqueeze(0)
+        loss, prediction = self.forward_step(obs, train=False)
+        return loss, prediction, obs
 
         # Return the average loss over all time steps
-        return total_loss / (traj.size(1) - 1)
-
-    def eval_step(self, traj, time):
-        try:
-            self.rnn.eval()
-            total_loss = 0  # Accumulate loss over all time steps
-
-            # Initialize hidden state (if using a vanilla RNN, LSTM, or GRU)
-            
-            try:
-                hidden = self.init_hidden(traj.size(0))  # Batch size is traj.size(0)
-            except Exception as e:
-                print(f"rnn: train_step: hidden except: Error: {e}")
-                return 1
-            # one sequence at a time.
-
-            # Iterate over each time step in the trajectory
-            for t in range(traj.size(1) - 1):  # Stop at the second-to-last time step
-                # Concatenate trajectory and time at each time step
-                obs = torch.cat((traj[:, t, :], time[:, t, :]), dim=-1).unsqueeze(1)
-
-                # Run trajectory through the RNN
-                try:
-                    out, hidden = self.forward(obs, hidden)  # Pass hidden state
-                except Exception as e:
-                    print(f"rnn: train_step: except: Error: {e}")
-                    return 1
-
-                # Prepare the target (next time step's values)
-                target = torch.cat((traj[:, t+1, :], time[:, t+1, :]), dim=-1).unsqueeze(1)
-
-                # Compute the loss
-                loss = self.criterion(out, target)
-                total_loss += loss  # Accumulate loss
-
-            # Return the average loss over all time steps
-            return total_loss / (traj.size(1) - 1)
-        except Exception as e:
-            print(f"rnn: eval_step: except: Error: {e}")
-            return 1
     
-    
-    def train(self, n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
+    def train(self, n_epochs, model_params=parameters.model_params, dataset=parameters.dataset, records=parameters.records):
         """
         Runs the training loop for n_epochs times where n_epochs is the "epochs per train".
 
@@ -183,46 +198,63 @@ class RNN(nn.Module):
         for epoch in range(1, n_epochs + 1):
             try:
                 # Training phase
-                self.rnn.train()  # Set model to training mode
-                epoch_train_loss = 0
-                for x_batch, y_batch in train_loader:
-                    _loss = self.train_step(x_batch, y_batch)
-                    epoch_train_loss += _loss.item()  # Accumulate batch loss
 
+                for x_batch, y_batch in train_loader:
+                    self.train_step(x_batch, y_batch)
                 # Compute average training loss for the epoch
-                #TODO: question: is this needed?
-                epoch_train_loss /= len(train_loader)
 
                 # Validation phase
-                self.rnn.eval()  # Set model to evaluation mode
                 epoch_val_loss = 0
                 with torch.no_grad():  # Disable gradient computation
                     for x_batch, y_batch in val_loader:
-                        _loss = self.eval_step(x_batch, y_batch)
-                        epoch_val_loss += _loss.item()  # Accumulate batch loss
+                        _loss, prediction, obs = self.eval_step(x_batch, y_batch)
+                        #debugging step TODO: remove
+                        records['predictions'] = prediction
+                        records['targets'] = obs
 
                 # Compute average validation loss for the epoch
-                epoch_val_loss /= len(val_loader)
+                epoch_val_loss = _loss / len(val_loader)
                 val_loss_history.append(epoch_val_loss)
                 KL_loss_history.append(0)
 
                 # Print epoch results
-                print(f"Epoch {model_params["epochs"] + epoch}: Train Loss = {epoch_train_loss:.4f}, Val Loss = {epoch_val_loss:.4f}")
+                print(f"Epoch {model_params["epochs"] + epoch}: Val Loss = {epoch_val_loss:.4f}")
                 
             except KeyboardInterrupt:
                 print("Training interrupted by user.")
                 return epoch, val_loss_history, val_loss_history, KL_loss_history
             
-            except Exception as e:
-                print(f"rnn: train: except: Error: {e}")
-                return epoch, val_loss_history, val_loss_history, KL_loss_history
+        
+            
+
 
         # print average loss:
         print(f"Logs: rnn: train: Average loss: {np.mean(val_loss_history)} at epoch {model_params['epochs'] + epoch}")
-        
+        # plot model_params['debug list'] with shape [69, 1, 1, 2]. sequence length of 69 and 2 features.
+        #adapt first into [69, 2]
+        debug_list = records['predictions']
+        debug_list = torch.cat(debug_list, dim=1).squeeze()
+        debug_list = debug_list[:, 0]
+        obs_list = records['targets']
+        obs_list = obs_list.squeeze()
+        #shape is [1, 70, 2], we need to reduce shape to [69, 2], dropping the first sample.
+        obs_list = obs_list[:, 0]
+        fig, ax = plt.subplots()
+
+        # Plot the data on the axes
+        ax.plot(debug_list, label="Prediction", color='r')
+        ax.plot(obs_list, label="Observation", color='b')
+
+        # Set title and legend
+        ax.set_title("Debug list")
+        ax.legend()
+
+        # Display the plot
+        # plt.show()
         # Return final epoch and loss histories
         return n_epochs, val_loss_history, val_loss_history, 0
     
+    #TODO: not implemented. partial implementation embedded in train, and eval_step.
     def eval(model_params=parameters.model_params, dataset=parameters.dataset):
         return
         dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
@@ -242,15 +274,116 @@ class RNN(nn.Module):
         return 0
         
     
-    class visualiser:
-        def __init__(self):
-            pass
+    class Visualiser:
+        def __init__(self, rnn_instance):
+            self.RNN = rnn_instance
 
-        def plot_training_loss(model_params=parameters.model_params, save=True, split=False, plot_total=True, plot_MSE=False, plot_KL=False):
+        def plot_training_loss(self, model_params=parameters.model_params, save=True, split=False, plot_total=True, plot_MSE=False, plot_KL=False):
             visualisation.plot_training_loss(model_params, save=save, split=split, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL)
 
-        def display_random_fit(model_params=parameters.model_params, dataset=parameters.dataset, show=True, save=False, random_samples=True):
-            pass
+        def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=True, save=False, random_samples=True):
+            ''' random assess model fit '''
+
+
+            # get data
+            trajs = dataset['trajs']
+            times = dataset['times']
+            print(f"debug: rnn: visualiser: display_random_fit: trajs shape {trajs.shape}, times shape {times.shape}")
+            y = dataset['y']
+
+            # get model
+            device = model_params['device']
+            epoch = model_params['epochs']
+            
+
+            # initialise figure
+            k = trajs[0].shape[-1]; _w = 7; _h = 4*k; fig = plt.figure(figsize = (_w, _h))
+            #fig.canvas.layout.width = '{}in'.format(_w); fig.canvas.layout.height= '{}in'.format(_h)
+            ax = [ [ fig.add_subplot(j,1,i) for i in range(1,j+1) ] for j in [k] ][0]
+            #concantenate trajs and times
+            datas = torch.cat((trajs, times), dim=-1)
+            print(f"debug: rnn: visualiser: display: datas shape: {datas.shape}")
+            # select data
+            j = list(range(len(datas)))
+            if random_samples:
+                random.shuffle(j)
+
+            # downsample
+            j = j[::30]
+
+            # build colourmap
+            cnorm  = colors.Normalize(vmin = 0, vmax = len(j)); smap = cmx.ScalarMappable(norm = cnorm, cmap = 'brg')
+
+            # iterate over transients
+            for _,i in enumerate(j):
+                
+                # get colour
+                c = smap.to_rgba(_)
+                
+                # send mini-batch to device
+                # data = datas[i].view(1, *datas[i].size()).to(device)
+                
+                #_time = np.linspace(-7.8, -4.2, 1000)#/10
+                #_time = np.linspace(-6.5+6.6, -4.2+6.6, 1000)#/10
+                
+                #+1 to account for time bias associated with removing the initial rise.
+                _time = np.linspace(0, 2.5, 1000) + 1#/10
+                
+                #_time = np.linspace(-7., -4.2, 1000)
+                #_time = np.logspace(-7.8, -4.2, 1000)
+                
+                #_time = np.logspace(0, 1.7, 20)
+                time = torch.Tensor(_time).to(device)
+
+                # perform inference step for prediciton
+
+
+                loss, prediction, obs = self.RNN.eval_step(datas[i, :, 0].unsqueeze(1), datas[i, :, 1].unsqueeze(1), batch_input=False)
+
+                pred_x = torch.cat(prediction, dim=1).squeeze()
+                pred_x = pred_x.detach().numpy()
+
+
+                # return prediction to cpu
+                # pred_x = pred_x.cpu().numpy()[0]
+                
+                #print(pred_x.shape, pred_z[0,0,:])
+                
+                _traj = trajs[i].cpu()
+                _t = times[i].cpu()
+
+                for l in range(k):
+                    u = 0
+                    
+                    #ax[k].set_ylim(-.8, .8)
+                    sc_ = 50*1e2/1e3
+                    
+                    # plot original and predicted trajectories
+                    ax[l].plot(_t, _traj[:, l+u]/sc_, '.', alpha = 0.6, color = c)
+                    ax[l].plot(datas[i, :, 2] - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} J$, {:.1f} V, {:.0e} s'.format(y[i][0], y[i][1], y[i][2]),
+                            linewidth = 2, alpha = 0.4, color = c)
+
+                    
+            plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
+            plt.ylabel('Charge [mA]')
+            # tile includes epoch number, learning rate atnd beta
+            plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}'.format(epoch, model_params['lr'], model_params['beta']))
+
+            #plt.xscale('log')
+            plt.legend(loc='upper right', title='Intensity, Bias, Delay')
+
+            plt.tight_layout()
+
+            if show:
+                plt.show()
+            if save:
+                #save as a png]
+                #todo: change
+                folder = model_params['folder']
+                #if saves folder does not exist create it
+                if not os.path.exists(folder):
+                    os.makedirs(folder)
+                fig.savefig(f"{folder}/training_epoch_{epoch:04d}.png", dpi=300)
 
         
         def compile_learning_gif(model_params=parameters.model_params, display=True):

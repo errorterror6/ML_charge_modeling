@@ -53,18 +53,35 @@ model_params = {
 
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
-    'total_epochs_train': 50,
-    'epochs_per_train': 1,
+    'total_epochs_train': 1000,
+    'epochs_per_train': 50,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 1,
     'MSE_loss': [],
     'KL_loss': [],
 
+    
+
     #labels
     'name': "default",
     'desc': "default_desc",
-    'folder': "saves"
+    'folder': "saves",
+
+    #free to use memory for debugging only
+    'debug': 1,
+    'debug_list': [],
+    'debug_list2': []
+}
+
+records = {
+    'loss': [],
+    'MSE_loss': [],
+    'KL_loss': [],
+
+    #RNN specific
+    'predictions': [],
+    'targets': []
 }
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

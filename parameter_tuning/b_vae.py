@@ -7,7 +7,7 @@ sys.path.append('../libs/')
 import shjnn
 
 class B_VAE:
-    class visualiser:
+    class Visualiser:
         def __init__(self):
             pass
 

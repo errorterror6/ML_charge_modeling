@@ -1,6 +1,7 @@
 import parameters
 import loader
 import rnn
+import torch
 
 import sys
 sys.path.append('../libs/')
@@ -43,7 +44,14 @@ def init_shjnn(model_params=parameters.model_params):
 must be called only after init_shjnn called.
 '''
 def init_RNN(model_params=parameters.model_params):
-    rnn.RNN(model_params) 
+    epochs = 0
+    model_params['epochs'] = epochs
+    #check if cuda is available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model_params['device'] = device
+    parameters.model = rnn.RNN(model_params)
+
+
 
 def load_data():
     print("Logs: Init: Initialising data from dataloader")
