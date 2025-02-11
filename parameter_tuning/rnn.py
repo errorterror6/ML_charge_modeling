@@ -33,10 +33,10 @@ class RNN(nn.Module):
             )
         #TODO: encode experimental variables into the hidden layer as init.
         #hidden to output (y_t+1, time_t+1)
-        self.h2h = nn.Linear(m['nhidden'], m['nhidden'])
+        # self.h2h = nn.Linear(m['nhidden'], m['nhidden'])
         self.h2o = nn.Linear(m['nhidden'], 2)
         self.loss_fn = torch.nn.MSELoss()
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=m['lr'])
 
         #visualiser
         self.visualiser = self.Visualiser(self)
@@ -50,8 +50,10 @@ class RNN(nn.Module):
       
     def forward(self, data, hidden):
         _, h_t = self.rnn(data, hidden)
-        h2 = self.h2h(h_t)
-        output = self.h2o(h2)
+        # h2 = self.h2h(h_t)
+        # output = self.h2o(h2)
+
+        output = self.h2o(h_t)
         return output, h_t
 
     #clips gradient to +-1 to prevent exploding gradients when using reLu
@@ -212,9 +214,12 @@ class RNN(nn.Module):
                         records['predictions'] = prediction
                         records['targets'] = obs
 
+
                 # Compute average validation loss for the epoch
                 epoch_val_loss = _loss / len(val_loader)
                 val_loss_history.append(epoch_val_loss)
+                self.model_params['loss'].append(epoch_val_loss)
+                self.model_params['MSE_loss'].append(epoch_val_loss)
                 KL_loss_history.append(0)
 
                 # Print epoch results
@@ -250,7 +255,7 @@ class RNN(nn.Module):
         ax.legend()
 
         # Display the plot
-        # plt.show()
+        plt.show()
         # Return final epoch and loss histories
         return n_epochs, val_loss_history, val_loss_history, 0
     
@@ -279,7 +284,7 @@ class RNN(nn.Module):
             self.RNN = rnn_instance
 
         def plot_training_loss(self, model_params=parameters.model_params, save=True, split=False, plot_total=True, plot_MSE=False, plot_KL=False):
-            visualisation.plot_training_loss(model_params, save=save, split=split, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL)
+            visualisation.plot_training_loss(model_params, save=save, split=False, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL, scale='linear')
 
         def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=True, save=False, random_samples=True):
             ''' random assess model fit '''

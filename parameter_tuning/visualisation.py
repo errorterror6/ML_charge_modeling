@@ -13,7 +13,7 @@ sys.path.append('../libs/')
 import shjnn
 
 
-def plot_training_loss(model_params, save=False, split=False, plot_total=False, plot_MSE=True, plot_KL=True):
+def plot_training_loss(model_params, save=False, split=False, plot_total=False, plot_MSE=True, plot_KL=True, scale='log'):
     ''' plot training loss '''
     if split:
         MSE_loss = model_params['MSE_loss']
@@ -90,21 +90,27 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
 
 
         # plot original and predicted trajectories
-        ax[0].plot([_+1e1 for _ in loss], '-b', label = 'training loss', alpha = 0.3)
+        ax[0].plot([_+0 for _ in loss], '-b', label = 'raw loss', alpha = 0.3)
 
         # smooth loss
         train_loss = np.abs( savgol_filter(loss, 13, 3) )
 
         # plot original and predicted trajectories
-        ax[0].plot([_+1e1 for _ in train_loss], '-b', alpha = 0.8)
+        ax[0].plot([_+0 for _ in train_loss], '-b', label = 'smoothed loss', alpha = 0.8)
 
 
         # format and display figure
-        plt.yscale('log')
+        if (scale == 'linear'):
+            plt.yscale('linear')
+        else:
+            plt.yscale('log')
+        
         #plt.xscale('log')
 
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
+
+        plt.title('loss graph')
 
         plt.legend()
         plt.tight_layout()
