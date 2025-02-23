@@ -36,8 +36,8 @@ model_params = {
     # hyper params
 
     
-    'nhidden': 128,
-    'rnn_nhidden': 32,
+    'nhidden': 1024,
+    'rnn_nhidden': 1024,
     'obs_dim': 1,
 
     'latent_dim': 16,
@@ -53,8 +53,8 @@ model_params = {
 
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
-    'total_epochs_train': 1,
-    'epochs_per_train': 1,
+    'total_epochs_train': 48,
+    'epochs_per_train': 48,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 1,

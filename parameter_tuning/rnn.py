@@ -25,7 +25,7 @@ class RNN(nn.Module):
         #TODO: ensure that the starting params of the RNN are the same run to run.
         self.rnn = nn.RNN(
             input_size=2,
-            hidden_size=m['nhidden'],
+            hidden_size=m['rnn_nhidden'],
             #use relu + clip_gradient if poor results with tanh
             nonlinearity='tanh',
             device=m['device'],
@@ -33,7 +33,7 @@ class RNN(nn.Module):
             )
         #TODO: encode experimental variables into the hidden layer as init.
         #hidden to output (y_t+1, time_t+1)
-        # self.h2h = nn.Linear(m['nhidden'], m['nhidden'])
+        self.h2h = nn.Linear(m['nhidden'], m['nhidden'])
         self.h2o = nn.Linear(m['nhidden'], 2)
         self.loss_fn = torch.nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.parameters(), lr=m['lr'])
@@ -50,10 +50,10 @@ class RNN(nn.Module):
       
     def forward(self, data, hidden):
         _, h_t = self.rnn(data, hidden)
-        # h2 = self.h2h(h_t)
-        # output = self.h2o(h2)
+        h2 = self.h2h(h_t)
+        output = self.h2o(h2)
 
-        output = self.h2o(h_t)
+        # output = self.h2o(h_t)
         return output, h_t
 
     #clips gradient to +-1 to prevent exploding gradients when using reLu
@@ -77,13 +77,20 @@ class RNN(nn.Module):
         # For t = 0 to seq_len - 2:
         #   - Use obs[:, t, :] as input.
         #   - Predict obs[:, t+1, :].
+        it = 0
         for t in range(seq_len - 1):
             # Prepare current input: shape [batch, 1, features]
-            current_input = obs[:, t, :].unsqueeze(1)
+            # NOTE: temporary code. it <=5 is meant to be replaced with the features of the thing.
+            if train or it <= 5:
+                current_input = obs[:, t, :].unsqueeze(1)
+                it += 1
 
             # Forward pass for a single time step
             try:
+                #TODO: this should feed it's own input for evaluation
+                #TODO: could be interested to compare both methods.
                 out, hidden = self.forward(current_input, hidden)
+                current_input = out
                 # Expected out shape: [batch, 1, output_dim]
             except KeyboardInterrupt:
                 print("Training interrupted by user.")
