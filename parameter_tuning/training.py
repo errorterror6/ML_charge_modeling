@@ -195,9 +195,10 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         update_params(model_params, model_params['epochs'])
         # loader.save_random_fit(model_params, dataset, random_samples=False)
         # loader.save_model(model_params)
-    parameters.model.visualiser.plot_training_loss(model_params, save=True, split=True)
+    # parameters.model.Visualiser.plot_training_loss(model_params, save=True, split=True)
     # loader.save_model_params(model_params)
-    # parameters.model.visualiser.display_random_fit(show=False)
+    visualiser = parameters.model.Visualiser(parameters.model)
+    visualiser.display_random_fit(show=False)
     # parameters.model.Visualiser.compile_learning_gif(model_params, display=False)
     print("logs: Training: Finished training")
     return model_params

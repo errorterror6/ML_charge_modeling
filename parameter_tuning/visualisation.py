@@ -183,7 +183,7 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
 
         # perform inference step for prediciton
         pred_x, pred_z = infer_step(traj, time)
-
+        print(f"debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
         # return prediction to cpu
         pred_x = pred_x.cpu().numpy()[0]
         

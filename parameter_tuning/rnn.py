@@ -262,7 +262,7 @@ class RNN(nn.Module):
         ax.legend()
 
         # Display the plot
-        plt.show()
+        # plt.show()
         # Return final epoch and loss histories
         return n_epochs, val_loss_history, val_loss_history, 0
     
@@ -284,6 +284,46 @@ class RNN(nn.Module):
         except KeyboardInterrupt:
             return 0
         return 0
+    
+    def format_output(pred_x, target_timesteps=1000):
+        """
+        Extrapolates the pred_x tensor to a specified target length by reflecting/repeating
+        each original timestep's value based on a fixed time equivalence ratio.
+        This simplified function assumes that 30 original timesteps are equivalent in time
+        to 1000 target timesteps.
+
+        Args:
+            pred_x: A PyTorch tensor of shape torch.Size([1, initial_timesteps, 1]).
+            target_timesteps: The desired number of timesteps in the extrapolated tensor (e.g., 1000).
+                            Must be greater than the initial number of timesteps in pred_x.
+
+        Returns:
+            pred_x_extrapolated: A PyTorch tensor of shape torch.Size([1, target_timesteps, 1]) with extrapolated values.
+        """
+        if not isinstance(pred_x, torch.Tensor):
+            raise TypeError("Input pred_x must be a PyTorch tensor.")
+        if len(pred_x.shape) != 3 or pred_x.shape[0] != 1 or pred_x.shape[2] != 1:
+            raise ValueError(f"Input pred_x must have shape torch.Size([1, initial_timesteps, 1]), but got {pred_x.shape}")
+        if target_timesteps <= pred_x.shape[1]:
+            raise ValueError("target_timesteps must be greater than the original timesteps for extrapolation.")
+
+        original_timesteps = pred_x.shape[1]
+        pred_x_extrapolated = torch.zeros(1, target_timesteps, 1) # Initialize with zeros
+
+        original_timesteps_time_equivalent = 30 # Fixed time equivalence assumption
+
+        for j in range(target_timesteps):
+            # Calculate the corresponding index in the original pred_x based on fixed time equivalence
+            original_index = int(j * (original_timesteps_time_equivalent / target_timesteps))
+
+            # Ensure the original index is within the valid range [0, original_timesteps - 1]
+            original_index = min(original_index, original_timesteps - 1)
+            original_index = max(original_index, 0) # Ensure index is not negative
+
+            pred_x_extrapolated[:, j, :] = pred_x[:, original_index, :]
+
+        return pred_x_extrapolated
+
         
     
     class Visualiser:
@@ -293,7 +333,7 @@ class RNN(nn.Module):
         def plot_training_loss(self, model_params=parameters.model_params, save=True, split=False, plot_total=True, plot_MSE=False, plot_KL=False):
             visualisation.plot_training_loss(model_params, save=save, split=False, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL, scale='linear')
 
-        def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=True, save=False, random_samples=True):
+        def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=False, save=True, random_samples=True):
             ''' random assess model fit '''
 
 
@@ -333,7 +373,7 @@ class RNN(nn.Module):
                 c = smap.to_rgba(_)
                 
                 # send mini-batch to device
-                # data = datas[i].view(1, *datas[i].size()).to(device)
+                traj = trajs[i].view(1, *trajs[i].size()).to(device)
                 
                 #_time = np.linspace(-7.8, -4.2, 1000)#/10
                 #_time = np.linspace(-6.5+6.6, -4.2+6.6, 1000)#/10
@@ -352,9 +392,13 @@ class RNN(nn.Module):
 
                 loss, prediction, obs = self.RNN.eval_step(datas[i, :, 0].unsqueeze(1), datas[i, :, 1].unsqueeze(1), batch_input=False)
 
-                pred_x = torch.cat(prediction, dim=1).squeeze()
-                pred_x = pred_x.detach().numpy()
+                pred_x = torch.cat(prediction, dim=1)
+                pred_x = pred_x[:, :, 0].unsqueeze(2)
+                #make RNN output the same format as B-VAE output.
+                pred_x = RNN.format_output(pred_x)
 
+                # print(f"debug: rnn: visualiser: display: pred_x shape: {pred_x.shape}")
+                pred_x = pred_x.cpu().detach().numpy()[0]
 
                 # return prediction to cpu
                 # pred_x = pred_x.cpu().numpy()[0]
@@ -372,7 +416,7 @@ class RNN(nn.Module):
                     
                     # plot original and predicted trajectories
                     ax[l].plot(_t, _traj[:, l+u]/sc_, '.', alpha = 0.6, color = c)
-                    ax[l].plot(datas[i, :, 2] - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} J$, {:.1f} V, {:.0e} s'.format(y[i][0], y[i][1], y[i][2]),
+                    ax[l].plot(_time - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} J$, {:.1f} V, {:.0e} s'.format(y[i][0], y[i][1], y[i][2]),
                             linewidth = 2, alpha = 0.4, color = c)
 
                     
