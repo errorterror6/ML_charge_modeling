@@ -331,7 +331,7 @@ class RNN(nn.Module):
             self.RNN = rnn_instance
 
         def plot_training_loss(self, model_params=parameters.model_params, save=True, split=False, plot_total=True, plot_MSE=False, plot_KL=False):
-            visualisation.plot_training_loss(model_params, save=save, split=False, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL, scale='linear')
+            visualisation.plot_training_loss(model_params, save=save, split=False, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL, scale='log')
 
         def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=False, save=True, random_samples=True):
             ''' random assess model fit '''

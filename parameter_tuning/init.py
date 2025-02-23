@@ -1,6 +1,7 @@
 import parameters
 import loader
 import rnn
+import b_vae
 import torch
 
 import sys
@@ -38,6 +39,7 @@ def init_shjnn(model_params=parameters.model_params):
 
     print("Logs: Init: Finished initialising SHJNN library")
 
+
     return model_params
 
 '''
@@ -49,7 +51,11 @@ def init_RNN(model_params=parameters.model_params):
     #check if cuda is available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_params['device'] = device
-    parameters.model = rnn.RNN(model_params)
+    return rnn.RNN(model_params)
+
+def init_B_VAE(model_params=parameters.model_params):
+    epochs=0
+    return b_vae.B_VAE(model_params)
 
 
 

@@ -93,6 +93,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         ax[0].plot([_+0 for _ in loss], '-b', label = 'raw loss', alpha = 0.3)
 
         # smooth loss
+        # NOTE: commented out, and the line below because not working. what does the 13 mean???
         train_loss = np.abs( savgol_filter(loss, 13, 3) )
 
         # plot original and predicted trajectories
@@ -109,6 +110,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
 
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
+        plt.yticks([1, 10, 100, 1000], ['1', '10', '100', '1000'])
 
         plt.title('loss graph')
 

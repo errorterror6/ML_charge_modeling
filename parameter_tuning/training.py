@@ -108,7 +108,7 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
     device = model_params['device']
 
     # run training for epochs, return loss
-    rnn = RNN(model_params)
+    rnn = parameters.model
     _epochs, _loss, _, _ = rnn.train(n_epochs, model_params=model_params, dataset=dataset)
 
     print('Logs: training: RNN_training_loop: Try')
@@ -116,7 +116,7 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
 
     # update loss, epochs
     model_params['epochs'] += _epochs
-    model_params['loss'].append(np.average(_loss))
+    # model_params['loss'].append(np.average(_loss))
     print(f'debug: loss size: {len(model_params['loss'])}')
 
     return model_params
@@ -184,10 +184,10 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         match parameters.trainer:
             case 'B-VAE':
                 B_VAE_training_loop(train_epochs, model_params, dataset)
-                parameters.model = B_VAE
+                
             case 'RNN':
                 RNN_training_loop(train_epochs, model_params, dataset)
-
+                
                 # print("Logs: training: train: debug: loss: ", parameters.model_params['loss'])
             case _:
                 print("Error: Invalid trainer, pick from options 'B-VAE'. Exiting.")
@@ -195,10 +195,9 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         update_params(model_params, model_params['epochs'])
         # loader.save_random_fit(model_params, dataset, random_samples=False)
         # loader.save_model(model_params)
-    # parameters.model.Visualiser.plot_training_loss(model_params, save=True, split=True)
+        parameters.model.visualiser.display_random_fit(show=False)
+    parameters.model.visualiser.plot_training_loss(model_params, save=True, split=True)
     # loader.save_model_params(model_params)
-    visualiser = parameters.model.Visualiser(parameters.model)
-    visualiser.display_random_fit(show=False)
     # parameters.model.Visualiser.compile_learning_gif(model_params, display=False)
     print("logs: Training: Finished training")
     return model_params

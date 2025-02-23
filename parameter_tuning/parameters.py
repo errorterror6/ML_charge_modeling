@@ -30,6 +30,8 @@ dataset_PV = {
 #choose between options 'B-VAE', 'RNN',
 trainer = 'B-VAE'
 model = None
+rnn = None
+b_vae = None
 
 #tune hyper-params here.
 model_params = {
@@ -53,11 +55,11 @@ model_params = {
 
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
-    'total_epochs_train': 10,
-    'epochs_per_train': 10,
+    'total_epochs_train': 50,
+    'epochs_per_train': 5,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
-    'loss_thresh': 1,
+    'loss_thresh': 0.0001,
     'MSE_loss': [],
     'KL_loss': [],
 

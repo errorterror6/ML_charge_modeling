@@ -29,7 +29,11 @@ if __name__ == '__main__':
     
     init.load_data()
     init.init_shjnn(parameters.model_params)
-    init.init_RNN(parameters.model_params)
+    match parameters.trainer:
+        case 'B-VAE':       
+            parameters.model = init.init_B_VAE(parameters.model_params)
+        case 'RNN':
+            parameters.model = init.init_RNN(parameters.model_params)
     training.train(parameters.model_params, parameters.dataset)
 
 
