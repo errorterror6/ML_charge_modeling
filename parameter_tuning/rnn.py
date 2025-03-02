@@ -287,19 +287,16 @@ class RNN(nn.Module):
         return 0
     
     def format_output(pred_x, target_timesteps=1000):
-        """
-        Extrapolates the pred_x tensor to a specified target length by reflecting/repeating
-        each original timestep's value based on a fixed time equivalence ratio.
-        This simplified function assumes that 30 original timesteps are equivalent in time
-        to 1000 target timesteps.
-
+        """             
+        Extrapolates the pred_x tensor to a specified target length using linear interpolation
+        between known time points.
+        
         Args:
             pred_x: A PyTorch tensor of shape torch.Size([1, initial_timesteps, 1]).
             target_timesteps: The desired number of timesteps in the extrapolated tensor (e.g., 1000).
                             Must be greater than the initial number of timesteps in pred_x.
-
         Returns:
-            pred_x_extrapolated: A PyTorch tensor of shape torch.Size([1, target_timesteps, 1]) with extrapolated values.
+            pred_x_extrapolated: A PyTorch tensor of shape torch.Size([1, target_timesteps, 1]) with linearly interpolated values.
         """
         if not isinstance(pred_x, torch.Tensor):
             raise TypeError("Input pred_x must be a PyTorch tensor.")
@@ -307,22 +304,33 @@ class RNN(nn.Module):
             raise ValueError(f"Input pred_x must have shape torch.Size([1, initial_timesteps, 1]), but got {pred_x.shape}")
         if target_timesteps <= pred_x.shape[1]:
             raise ValueError("target_timesteps must be greater than the original timesteps for extrapolation.")
-
+        
         original_timesteps = pred_x.shape[1]
-        pred_x_extrapolated = torch.zeros(1, target_timesteps, 1) # Initialize with zeros
-
-        original_timesteps_time_equivalent = 30 # Fixed time equivalence assumption
-
+        pred_x_extrapolated = torch.zeros(1, target_timesteps, 1)  # Initialize with zeros
+        
+        # Calculate the scaling factor between original and target timesteps
+        scale_factor = original_timesteps / target_timesteps
+        
         for j in range(target_timesteps):
-            # Calculate the corresponding index in the original pred_x based on fixed time equivalence
-            original_index = int(j * (original_timesteps_time_equivalent / target_timesteps))
-
-            # Ensure the original index is within the valid range [0, original_timesteps - 1]
-            original_index = min(original_index, original_timesteps - 1)
-            original_index = max(original_index, 0) # Ensure index is not negative
-
-            pred_x_extrapolated[:, j, :] = pred_x[:, original_index, :]
-
+            # Calculate the exact position in the original time scale
+            original_pos = j * scale_factor
+            
+            # Get the indices of the two nearest points in the original sequence
+            lower_idx = int(original_pos)
+            upper_idx = min(lower_idx + 1, original_timesteps - 1)
+            
+            # If we're exactly on a known point or beyond the range, no interpolation needed
+            if lower_idx >= original_timesteps - 1:
+                pred_x_extrapolated[:, j, :] = pred_x[:, original_timesteps - 1, :]
+            elif lower_idx == original_pos:
+                pred_x_extrapolated[:, j, :] = pred_x[:, lower_idx, :]
+            else:
+                # Calculate interpolation weight (how far we are between the two known points)
+                weight = original_pos - lower_idx
+                
+                # Linear interpolation: value = (1-w) * v1 + w * v2
+                pred_x_extrapolated[:, j, :] = (1 - weight) * pred_x[:, lower_idx, :] + weight * pred_x[:, upper_idx, :]
+        
         return pred_x_extrapolated
 
         

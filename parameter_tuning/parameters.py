@@ -37,13 +37,14 @@ b_vae = None
 model_params = {
     # hyper params
 
-    
-    'nhidden': 1024,
-    'rnn_nhidden': 1024,
+    #NOTE: reccomended to increase rnn_nhidden size.
+    'nhidden': 128,
+    'rnn_nhidden': 128,
     'obs_dim': 1,
 
     'latent_dim': 16,
-    'lr': 1e-5,
+    #NOTE: reccomended to decrease this to 1e-5 or similar for training
+    'lr': 1e-3,
     'n_batch': 16,  #batch size
     'beta': 0.1,
 
@@ -55,7 +56,8 @@ model_params = {
 
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
-    'total_epochs_train': 500,
+    # NOTE: due a bug, total_epochs_Train must be greater than 14.
+    'total_epochs_train': 20,
     'epochs_per_train': 10,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
