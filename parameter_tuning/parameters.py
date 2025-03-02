@@ -43,7 +43,7 @@ model_params = {
     'obs_dim': 1,
 
     'latent_dim': 16,
-    'lr': 1e-3,
+    'lr': 1e-5,
     'n_batch': 16,  #batch size
     'beta': 0.1,
 

@@ -34,10 +34,8 @@ class RNN(nn.Module):
         #TODO: encode experimental variables into the hidden layer as init.
         #hidden to output (y_t+1, time_t+1)
         self.h2h1 = nn.Linear(m['nhidden'], m['nhidden'])
-        self.h2h2 = nn.Linear(m['nhidden'], 128)
-        self.h2h3 = nn.Linear(128, 128)
-        self.h2h4 = nn.Linear(128, 64)
-        self.h2o = nn.Linear(64, 2)
+
+        self.h2o = nn.Linear(m['nhidden'], 2)
         self.loss_fn = torch.nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.parameters(), lr=m['lr'])
 
@@ -54,9 +52,6 @@ class RNN(nn.Module):
     def forward(self, data, hidden):
         _, h_t = self.rnn(data, hidden)
         h2 = self.h2h1(h_t)
-        h2 = self.h2h2(h2)
-        h2 = self.h2h3(h2)
-        h2 = self.h2h4(h2)
         output = self.h2o(h2)
 
         # output = self.h2o(h_t)
