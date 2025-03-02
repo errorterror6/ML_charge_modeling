@@ -376,6 +376,7 @@ class RNN(nn.Module):
             cnorm  = colors.Normalize(vmin = 0, vmax = len(j)); smap = cmx.ScalarMappable(norm = cnorm, cmap = 'brg')
 
             # iterate over transients
+            loss_list = []
             for _,i in enumerate(j):
                 
                 # get colour
@@ -400,7 +401,7 @@ class RNN(nn.Module):
 
 
                 loss, prediction, obs = self.RNN.eval_step(datas[i, :, 0].unsqueeze(1), datas[i, :, 1].unsqueeze(1), batch_input=False)
-
+                loss_list.append(loss)
                 pred_x = torch.cat(prediction, dim=1)
                 pred_x = pred_x[:, :, 0].unsqueeze(2)
                 #make RNN output the same format as B-VAE output.
@@ -428,11 +429,11 @@ class RNN(nn.Module):
                     ax[l].plot(_time - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} J$, {:.1f} V, {:.0e} s'.format(y[i][0], y[i][1], y[i][2]),
                             linewidth = 2, alpha = 0.4, color = c)
 
-                    
+            mean_loss = np.mean(loss_list)
             plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
             plt.ylabel('Charge [mA]')
             # tile includes epoch number, learning rate atnd beta
-            plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}'.format(epoch, model_params['lr'], model_params['beta']))
+            plt.title('Epoch: {}, lr: {:.1e}, loss: {:.1e}'.format(epoch, model_params['lr'], mean_loss))
 
             #plt.xscale('log')
             plt.legend(loc='upper right', title='Intensity, Bias, Delay')

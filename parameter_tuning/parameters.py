@@ -38,8 +38,8 @@ model_params = {
     # hyper params
 
     #NOTE: reccomended to increase rnn_nhidden size.
-    'nhidden': 128,
-    'rnn_nhidden': 128,
+    'nhidden': 1024,
+    'rnn_nhidden': 1024,
     'obs_dim': 1,
 
     'latent_dim': 16,
