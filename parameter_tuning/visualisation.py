@@ -210,7 +210,7 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     # Create inference function from the trained model
     infer_step = shjnn.make_infer_step(
         model_func, encoder, decoder, optimizer, device, 
-        _input='traj', _sample=False
+        input_mode='traj', sample=False
     )
 
     # Select indices of trajectories to plot
@@ -420,7 +420,7 @@ def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
     # Create inference function for trajectory encoding
     infer_step_encode = shjnn.make_infer_step(
         model_func, encoder, decoder, optimizer, device, 
-        _input='traj', _sample=False
+        input_mode='traj', sample=False
     )
 
     # Get indices of all trajectories
@@ -465,7 +465,7 @@ def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
     # Create inference function for latent space decoding
     infer_step_decode = shjnn.make_infer_step(
         model_func, encoder, decoder, optimizer, device, 
-        _input='latent'
+        input_mode='latent'
     )
 
     # Define range of values to test for the selected latent dimension
