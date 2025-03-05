@@ -231,7 +231,7 @@ class RNN(nn.Module):
                 KL_loss_history.append(0)
 
                 # Print epoch results
-                print(f"Epoch {model_params["epochs"] + epoch}: Val Loss = {epoch_val_loss:.4f}")
+                print(f"Epoch {model_params['epochs'] + epoch}: Val Loss = {epoch_val_loss:.4f}")
                 
             except KeyboardInterrupt:
                 print("Training interrupted by user.")
@@ -335,8 +335,27 @@ class RNN(nn.Module):
 
         
     
-    class Visualiser:
+    class Visualiser:
+        """
+        Visualization class for RNN models.
+        
+        This class provides methods for visualizing training history, model predictions, 
+        and creating animations of the training process for RNN models.
+        
+        Attributes
+        ----------
+        RNN : RNN
+            Reference to the parent RNN model instance
+        """
         def __init__(self, rnn_instance):
+            """
+            Initialize the Visualiser with a reference to its parent RNN model.
+            
+            Parameters
+            ----------
+            rnn_instance : RNN
+                The parent RNN model instance
+            """
             self.RNN = rnn_instance
 
         def plot_training_loss(self, model_params=parameters.model_params, save=True, split=False, plot_total=True, plot_MSE=False, plot_KL=False):
@@ -456,8 +475,7 @@ class RNN(nn.Module):
             visualisation.compile_learning_gif(model_params, display=display)
 
         def sweep_latent_adaptives(model_params=parameters.model_params, dataset=parameters.dataset):
-            visualisation.sweep_latent_space(model_params, dataset)
+            visualisation.sweep_latent_adaptives(model_params, dataset)
 
         def sweep_latent_adaptive(model_params=parameters.model_params, dataset=parameters.dataset, latent_dim_number=0):
-            visualisation.sweep_latent_space(model_params, dataset, latent_dim_number)
-
+            visualisation.sweep_latent_adaptive(model_params, dataset, latent_dim_number)
