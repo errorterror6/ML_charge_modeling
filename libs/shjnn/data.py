@@ -1,141 +1,143 @@
+"""
+Data Processing Module for Stochastic Hidden Jump Neural Network (SHJNN)
 
-''' imports '''
+This module provides functions and classes for:
+1. Loading and preparing experimental data
+2. Preprocessing and normalizing data
+3. Creating PyTorch datasets for model training
+"""
 
-import pickle, os
+# Standard library imports
+import pickle
+import os
 
+# Data processing
 import numpy as np
+from sklearn import preprocessing
 
+# PyTorch
 import torch
 from torch.utils.data import Dataset
 
-from sklearn import preprocessing
-
-
-
-''' import and prepare dataset '''
 
 def prep_data():
-
-    ''' Prepare Dataset
-
-        pre-process data, prepare for training
-
-    Args:
-        var (int): some variable
-
+    """
+    Prepare dataset for training.
+    
+    This function:
+    1. Loads raw data from the database
+    2. Filters and processes the data
+    3. Normalizes features
+    4. Converts to PyTorch tensors
+    
     Returns:
-        (str): some output
-    '''
+        tuple: (trajectories, time_points, data_scaler)
+            - trajectories: List of tensor trajectories [sequence_length, feature_dim]
+            - time_points: List of tensor time points [sequence_length, 1]
+            - data_scaler: StandardScaler for denormalizing predictions
+    """
+    # Import raw dataset
+    base_path, file_name = '../data', 'db'
+    
+    # Open dataset file
+    with open(os.path.join(base_path, file_name), 'rb') as file:
+        database = pickle.load(file)
 
-    ''' import raw dataset '''
+    # Get list of unique device IDs
+    device_ids = list(set([entry['device'] for entry in database]))
 
-    # dataset location
-    _base_path, _file_name = '../data', 'db'
+    # Prepare lists to store processed data
+    processed_data = []
+    time_points = []
 
-    # open dataset file
-    with open(os.path.join(_base_path, _file_name), 'rb') as file:
+    # Define features to extract
+    feature_keys = [
+        'temperature',  # Environmental temperature
+        'intensity',    # Light intensity
+        'proc_time',    # Processing time
+        'voc',          # Open-circuit voltage
+        'ff',           # Fill factor
+        'rs',           # Series resistance
+    ]
+    
+    # Define time variable (dependent variable for sorting)
+    time_var = 'proc_time'
 
-        # load pickled data dict
-        db = pickle.load(file)
+    # Process data for each device
+    for device_id in device_ids:
+        # Find all measurements for current device
+        device_measurements = [entry for entry in database if entry['device'] == device_id]
+        
+        # Sort measurements by processing time
+        sort_indices = np.argsort(np.array([entry[time_var] for entry in device_measurements]))
+        device_measurements = [device_measurements[i] for i in sort_indices]
+        
+        # Extract feature values and time points
+        device_features = np.array([[entry[key] for key in feature_keys] 
+                                  for entry in device_measurements])
+        
+        device_times = np.array([[entry[time_var]] for entry in device_measurements])
+        
+        # Only use devices with exactly 8 time points
+        if len(device_times) == 8:
+            processed_data.append(device_features)
+            time_points.append(device_times)
 
+    # Normalize dataset features
+    # Fit scaler to all data (concatenated across devices)
+    data_scaler = preprocessing.StandardScaler().fit(np.concatenate(processed_data))
+    
+    # Transform each device's data with the scaler
+    normalized_data = [data_scaler.transform(device_data) for device_data in processed_data]
 
-    ''' filter dataset '''
+    # Convert to PyTorch tensors
+    trajectory_tensors = [torch.Tensor(data) for data in normalized_data]
+    time_tensors = [torch.Tensor(times) for times in time_points]
 
-    # get list unique devices by id
-    #devs = list(set([ n['device'] for n in db if int(n['device']) in range(16, 21) ]))
-    devs = list(set([ n['device'] for n in db
-                     #if n['intensity'] in [1550, 740, 400]
-                     #and n['temperature'] in [180, 150, 120]
+    # Return trajectories, time points, and the scaler for later use
+    return trajectory_tensors, time_tensors, data_scaler
 
-                     #if n['intensity'] not in [1550, 740]
-                     #and n['temperature'] not in [180, 25]
-                     #and n['temperature'] not in [180, 25]
-
-                     #and n['proc_time'] < 100
-                     ]))
-
-
-    ''' aggregate data into list features, index '''
-
-    # store device data in list
-    data = []
-    time = []
-
-    # define data to extract by key
-    keys = ['temperature', 'intensity', 'proc_time', 'voc', 'ff', 'rs',]# 'eta', 'isc']
-    #keys = ['temperature', 'intensity', 'voc', 'ff', 'rs']
-    #keys = ['voc', 'ff', 'rs']
-
-    dep_var = 'proc_time'
-
-    # iterate each device
-    for dev in devs[:]:
-
-        # find measurement nodes by device id
-        nodes = [ n for n in db if n['device'] == dev ]
-
-        # sort nodes on processing dependent variable (time axis)
-        j = np.argsort( np.array([ n[dep_var] for n in nodes ]) )
-        nodes = [ nodes[i] for i in j ]
-
-        # extract data from each node and store
-        _data = np.array([ [ node[k] for k in keys ] for node in nodes[:] ])
-
-        _time = np.array([ [ node[k] for k in [dep_var] ] for node in nodes[:] ])
-        #_time = np.log10(np.array([ node[dep_var] for node in nodes[1:] ]))
-
-        # set t0 to positive value for later logscale
-        #_time[0] = -0.7
-
-        # ensure all data has same time
-        if len(_time) == 8:
-            # store data array
-            data.append( _data )
-            time.append( _time )
-
-
-    ''' normalise dataset features '''
-
-    # initialise scaler for data, fit to all data (flatten on time axis)
-    data_scaler = preprocessing.StandardScaler().fit( np.concatenate(data) )
-
-    # scale / normalise data
-    norm_data = [ data_scaler.transform(_) for _ in data ]
-
-
-    ''' convert to torch tensors '''
-
-    # prepare dataset (trajectory vector and time) as tensors, move to device
-    #trajs = [ torch.Tensor(_).to(device) for _ in norm_data ]
-    #times = [ torch.Tensor(_).to(device) for _ in time ]
-    trajs = [ torch.Tensor(_) for _ in norm_data ]
-    times = [ torch.Tensor(_) for _ in time ]
-
-    #times = [ torch.Tensor( np.log(_) ) if _ != 0. else _ for _ in time ]
-
-
-    # return data lists: trajectories, times; data scaler
-    return trajs, times, data_scaler
-
-
-
-''' dataset components '''
 
 class CustomDataset(Dataset):
+    """
+    Custom PyTorch Dataset for trajectories and time points.
+    
+    This dataset pairs trajectory data with corresponding time points
+    for use with PyTorch DataLoader.
+    
+    Attributes:
+        x (list): List of trajectory tensors
+        y (list): List of time point tensors
+    """
 
-    def __init__(self, x_tensor, y_tensor):
-
-        self.x = x_tensor
-        self.y = y_tensor
-
+    def __init__(self, trajectories, time_points):
+        """
+        Initialize the dataset with trajectories and time points.
+        
+        Args:
+            trajectories (list): List of trajectory tensors
+            time_points (list): List of time point tensors
+        """
+        self.x = trajectories
+        self.y = time_points
 
     def __getitem__(self, index):
-
+        """
+        Get a single data item.
+        
+        Args:
+            index (int): Index of the item to get
+            
+        Returns:
+            tuple: (trajectory, time_points) at the given index
+        """
         return (self.x[index], self.y[index])
 
-
     def __len__(self):
-
+        """
+        Get the number of items in the dataset.
+        
+        Returns:
+            int: Number of items
+        """
         return len(self.x)
-
-

@@ -1,133 +1,133 @@
+"""
+Inference Module for Stochastic Hidden Jump Neural Network (SHJNN)
 
-''' imports '''
-
-import numpy as np
+This module provides functions for running inference with the trained SHJNN model:
+1. Inference step function factory (two modes: latent input or trajectory input)
+2. ODE-based trajectory prediction in the latent space
+3. Decoding predicted latent trajectories to observation space
+"""
 
 import torch
-
-# ode solve component
-#from torchdiffeq import odeint_adjoint as odeint
 from torchdiffeq import odeint
 
 
-
-''' model inference '''
-
-def make_infer_step(func, rec, dec, optim, device, _input = 'traj', _sample=True):
-
-    ''' Build Inference Step Function
-
-        builds function that performs an inference step
-
+def make_infer_step(dynamics_func, recognition_network, decoder, optimizer, device, input_mode='traj', sample=True):
+    """
+    Create an inference step function.
+    
+    This factory function returns a function that performs prediction:
+    either from a latent state directly or by first encoding a trajectory.
+    
     Args:
-        var (int): some variable
-
+        dynamics_func (nn.Module): ODE function for latent dynamics
+        recognition_network (nn.Module): Recognition network for encoding trajectories
+        decoder (nn.Module): Decoder network for decoding latent states
+        optimizer (torch.optim.Optimizer): Optimizer (not used during inference)
+        device (torch.device): Device to run computations on
+        input_mode (str): Input mode - 'latent' or 'traj'
+        sample (bool): Whether to sample from latent distribution or use mean
+        
     Returns:
-        (str): some output
-    '''
-
-    # if passed latent dimensions directly
-    if _input == 'latent':
-
-        def infer_step(z0, time):
-
-            # inference, do not compute gradients
+        function: Inference step function
+    """
+    
+    # Inference function for direct latent input
+    if input_mode == 'latent':
+        def infer_step(z0, time_points):
+            """
+            Perform inference step from a latent state.
+            
+            Args:
+                z0 (Tensor): Initial latent state [batch_size, latent_dim]
+                time_points (Tensor): Time points to predict at
+                
+            Returns:
+                tuple: (pred_x, pred_z)
+                    - pred_x: Predicted observations [batch_size, time_len, obs_dim]
+                    - pred_z: Predicted latent states [batch_size, time_len, latent_dim]
+            """
+            # Inference mode (no gradient computation)
             with torch.no_grad():
-
-                # set models to evaluation only mode
-                rec.eval()
-                func.eval()
-                dec.eval()
-
-                ''' compute state predictions '''
-
-                #print(time.size())
-
-                # get state prediction from ode solver given inferred state and samples
-                pred_z = odeint(func, z0, time.squeeze()).permute(1, 0, 2)
-
-                #print(pred_z.size())
-                #print(pred_z)
-
-                # decode predicted state (latent) to final trajectory dimensions
-                pred_x = dec(pred_z)
-
-
-            # returns calculated loss
+                # Set models to evaluation mode
+                recognition_network.eval()
+                dynamics_func.eval()
+                decoder.eval()
+                
+                # Predict latent trajectory by solving ODE
+                pred_z = odeint(
+                    dynamics_func, 
+                    z0, 
+                    time_points.squeeze()
+                ).permute(1, 0, 2)
+                
+                # Decode latent trajectory to observation space
+                pred_x = decoder(pred_z)
+                
             return pred_x, pred_z
-
-    # input as full trajectories
+    
+    # Inference function for trajectory input
     else:
-
-        def infer_step(traj, time):
-
-            # inference, do not compute gradients
+        def infer_step(trajectory, time_points):
+            """
+            Perform inference step from a trajectory.
+            
+            Args:
+                trajectory (Tensor): Input trajectory [batch_size, seq_len, obs_dim]
+                time_points (Tensor): Time points to predict at
+                
+            Returns:
+                tuple: (pred_x, pred_z)
+                    - pred_x: Predicted observations [batch_size, time_len, obs_dim]
+                    - pred_z: Predicted latent states [batch_size, time_len, latent_dim]
+            """
+            # Inference mode (no gradient computation)
             with torch.no_grad():
-
-                # set models to evaluation only mode
-                rec.eval()
-                func.eval()
-                dec.eval()
-
-
-                ''' ingest trajectory (reverse time) '''
-
-                # initialise recognition network hidden layer
-                h = rec.initHidden().to(device)[:1,:]
-                #print(h.shape)
-
-                # iterate length each trajectory input
-                for t in reversed(range(traj.size(1))):
-
-                    # get trajectory samples in reverse time from final
-                    obs = traj[:, t, :]
-
-                    # run trajectory through recog net
-                    out, h = rec.forward(obs, h)
-
-
-                ''' infer initial latent state '''
-
-                # predicted latent state mean
-                latent_dim = out.size()[1]//2
-
-                # split final recog net output, latent state mean and variance
-                qz0_mean, qz0_logvar = out[:, :latent_dim], out[:, latent_dim:]
-                #qz0_mean, qz0_logvar = out[:, :latent_dim].squeeze(), out[:, latent_dim:].squeeze()
-
-                # generate random tensors size latent space dims (sample random normal distribution)
-                epsilon = torch.randn(qz0_mean.size()).to(device)
-
-                # infer initial augmented state from posterior (random sample)
-                z0 = epsilon * torch.exp(.5 * qz0_logvar) + qz0_mean
-
-                # if not sampling, use direct z0 prediction
-                if _sample == False:
-                        z0 = qz0_mean
-
-                #z0 = out[:, :latent_dim]
-
-                #print(z0.size())
-
-
-                ''' compute state predictions '''
-
-                #print(time.size())
-
-                # get state prediction from ode solver given inferred state and samples
-                pred_z = odeint(func, z0, time.squeeze()).permute(1, 0, 2)
-                #pred_z = odeint(func, z0, time[0,:]).permute(1, 0, 2)
-
-                #print(pred_z.size())
-                #print(pred_z)
-
-                # decode predicted state (latent) to final trajectory dimensions
-                pred_x = dec(pred_z)
-
-
-            # returns calculated loss
+                # Set models to evaluation mode
+                recognition_network.eval()
+                dynamics_func.eval()
+                decoder.eval()
+                
+                # --- Encode trajectory (in reverse time) ---
+                
+                # Initialize recognition network hidden state
+                hidden_state = recognition_network.initHidden().to(device)[:1, :]
+                
+                # Process trajectory in reverse order
+                for t in reversed(range(trajectory.size(1))):
+                    # Get trajectory sample at time t
+                    observation = trajectory[:, t, :]
+                    
+                    # Process through recognition network
+                    output, hidden_state = recognition_network.forward(observation, hidden_state)
+                
+                # --- Infer initial latent state ---
+                
+                # Split recognition output into mean and log-variance
+                latent_dim = output.size()[1] // 2
+                latent_mean, latent_logvar = output[:, :latent_dim], output[:, latent_dim:]
+                
+                # Either sample from the distribution or use the mean
+                if sample:
+                    # Sample from posterior using reparameterization trick
+                    epsilon = torch.randn(latent_mean.size()).to(device)
+                    z0 = epsilon * torch.exp(0.5 * latent_logvar) + latent_mean
+                else:
+                    # Use mean directly
+                    z0 = latent_mean
+                
+                # --- Predict trajectory ---
+                
+                # Predict latent trajectory by solving ODE
+                pred_z = odeint(
+                    dynamics_func, 
+                    z0, 
+                    time_points.squeeze()
+                ).permute(1, 0, 2)
+                
+                # Decode latent trajectory to observation space
+                pred_x = decoder(pred_z)
+                
             return pred_x, pred_z
-
-
-    # return function to be called within train loop
+    
+    # Return the appropriate inference function
     return infer_step

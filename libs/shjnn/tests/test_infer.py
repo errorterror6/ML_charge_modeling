@@ -52,7 +52,7 @@ class TestInferComponents(unittest.TestCase):
             self.dec, 
             self.optim, 
             self.device,
-            _input='latent'
+            input_mode='latent'
         )
         
         # Check that it's callable
@@ -77,7 +77,7 @@ class TestInferComponents(unittest.TestCase):
             self.dec, 
             self.optim, 
             self.device,
-            _input='traj'
+            input_mode='traj'
         )
         
         # Check that it's callable
@@ -95,8 +95,8 @@ class TestInferComponents(unittest.TestCase):
             self.dec, 
             self.optim, 
             self.device,
-            _input='traj',
-            _sample=False
+            input_mode='traj',
+            sample=False
         )
         
         # Check that it's callable

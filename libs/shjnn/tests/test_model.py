@@ -50,8 +50,8 @@ class TestModelComponents(unittest.TestCase):
         rec = RecognitionRNN(
             latent_dim=self.latent_dim, 
             obs_dim=self.obs_dim, 
-            nhidden=self.rnn_nhidden, 
-            nbatch=self.nbatch
+            hidden_size=self.rnn_nhidden, 
+            batch_size=self.nbatch
         )
         
         # Test initialization of hidden state
@@ -73,7 +73,7 @@ class TestModelComponents(unittest.TestCase):
         """Test the LatentODEfunc implementation."""
         func = LatentODEfunc(
             latent_dim=self.latent_dim, 
-            nhidden=self.nhidden
+            hidden_size=self.nhidden
         )
         
         # Test forward pass
@@ -92,7 +92,7 @@ class TestModelComponents(unittest.TestCase):
         dec = Decoder(
             latent_dim=self.latent_dim, 
             obs_dim=self.obs_dim, 
-            nhidden=self.nhidden
+            hidden_size=self.nhidden
         )
         
         # Test forward pass
