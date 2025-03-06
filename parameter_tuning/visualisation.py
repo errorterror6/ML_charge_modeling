@@ -1,405 +1,527 @@
-import os, re, logging, torch, random, glob
+"""
+Visualization module for plotting and analyzing ML charge modeling results.
+
+This module provides functions for visualizing training results, model predictions,
+and latent space characteristics for variational autoencoder models.
+"""
+
+import os
+import logging
+import glob
+import torch
+import random
 import numpy as np
+import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
-import matplotlib.pyplot as plt
-from PIL import Image
 import matplotlib.animation as animation
+from PIL import Image
 from scipy.signal import savgol_filter
 
-import parameters
 import sys
 sys.path.append('../libs/')
+import parameters
 import shjnn
 
 
 def plot_training_loss(model_params, save=False, split=False, plot_total=False, plot_MSE=True, plot_KL=True, scale='log'):
-    ''' plot training loss '''
+    """
+    Plot training loss curves from model training history.
+    
+    This function visualizes the training loss over epochs, optionally showing different
+    loss components (MSE, KL, total) on separate axes. Can produce either a combined
+    or split view of the loss components.
+    
+    Parameters
+    ----------
+    model_params : dict
+        Dictionary containing model parameters and training history
+        Required keys: 'MSE_loss', 'KL_loss', 'loss', 'epochs', 'folder'
+    save : bool, default=False
+        Whether to save the plot to disk
+    split : bool, default=False
+        If True, plot MSE and KL loss on separate axes
+    plot_total : bool, default=False
+        If True, plot the total loss (MSE + KL)
+    plot_MSE : bool, default=True
+        If True, plot the MSE loss component
+    plot_KL : bool, default=True
+        If True, plot the KL loss component
+    scale : str, default='log'
+        Scale for y-axis, either 'log' or 'linear'
+    
+    Returns
+    -------
+    None
+        The function creates and optionally saves a plot but doesn't return any values
+    """
     if split:
-        MSE_loss = model_params['MSE_loss']
-        KL_loss = model_params['KL_loss']
+        mse_loss = model_params['MSE_loss']
+        kl_loss = model_params['KL_loss']
         total_loss = model_params['loss']
         print(f'Debug: total_loss shape: {len(total_loss)} at epoch {model_params["epochs"]}')
-        k = 1
-        _w = 5
-        _h = 2*k
-        fig = plt.figure(figsize=(_w, _h))
+        
+        # Set up figure dimensions
+        fig_width = 5
+        fig_height = 2
+        fig = plt.figure(figsize=(fig_width, fig_height))
 
-        # Simplified subplot addition
-        ax = fig.add_subplot(1, 1, 1)
+        # Create main subplot
+        main_ax = fig.add_subplot(1, 1, 1)
 
-        # Plot MSE_loss with red color on the primary y-axis
+        # Plot MSE loss with red color on the primary y-axis
         if plot_MSE:
-            ax.plot(MSE_loss, '-r', label='MSE loss', alpha=0.3, color='red')
-            ax.set_yscale('log')
-            ax.set_ylabel('MSE Loss')
+            main_ax.plot(mse_loss, '-r', label='MSE loss', alpha=0.3, color='red')
+            main_ax.set_yscale('log')
+            main_ax.set_ylabel('MSE Loss')
 
-        # Plot KL_loss with blue color on the secondary y-axis
+        # Plot total loss with blue color on a secondary y-axis
         if plot_total:
-            ax2 = ax.twinx()
-            ax2.plot(total_loss, '-b', label='total loss', alpha=0.3, color='blue')
-            ax2.set_yscale('log')
-            ax2.set_ylabel('Total Loss')
+            total_ax = main_ax.twinx()
+            total_ax.plot(total_loss, '-b', label='Total loss', alpha=0.3, color='blue')
+            total_ax.set_yscale('log')
+            total_ax.set_ylabel('Total Loss')
 
-        # add the KL loss to another axis
+        # Plot KL loss with green color on another secondary y-axis
         if plot_KL:
-            ax1 = ax.twinx()
-            ax1.plot(KL_loss, '-g', label='KL loss', alpha=0.3, color='green')
-            # ax1.plot(-np.array(MSE_loss) + np.array(total_loss), '-g', label='KL loss2', alpha=0.3, color='green')
-            ax1.set_ylabel('KL Loss')
+            kl_ax = main_ax.twinx()
+            kl_ax.plot(kl_loss, '-g', label='KL loss', alpha=0.3, color='green')
+            kl_ax.set_ylabel('KL Loss')
 
-        # Smooth loss using Savitzky-Golay filter for both MSE_loss and KL_loss
-        # train_MSE_loss = np.abs(savgol_filter(MSE_loss, 13, 3))
-        # train_KL_loss = np.abs(savgol_filter(KL_loss, 13, 3))
-
-        # Optionally plot smoothed losses (uncomment to use)
-        # ax.plot(train_MSE_loss, '-r', alpha=0.8)
-        # ax1.plot(train_KL_loss, '-b', alpha=0.8)
+        # Optional: Plot smoothed losses using Savitzky-Golay filter
+        # window_size = 13  # must be odd and less than data length
+        # poly_order = 3    # polynomial order for the filter
+        # smoothed_mse = np.abs(savgol_filter(mse_loss, window_size, poly_order))
+        # smoothed_kl = np.abs(savgol_filter(kl_loss, window_size, poly_order))
+        # main_ax.plot(smoothed_mse, '-r', alpha=0.8)
+        # kl_ax.plot(smoothed_kl, '-g', alpha=0.8)
 
         # Labels and legend
-        ax.set_xlabel('Epochs')
-        ax.set_ylabel('Losses')
+        main_ax.set_xlabel('Epochs')
+        main_ax.set_ylabel('Losses')
 
-        # Only call plt.legend() after setting labels for each line plot.
-        ax.legend(loc='upper left')
+        # Add legends to appropriate axes
+        main_ax.legend(loc='upper left')
         if plot_KL:
-            ax1.legend(loc='upper right')
+            kl_ax.legend(loc='upper right')
         if plot_total:
-            ax2.legend(loc='upper center')
+            total_ax.legend(loc='upper center')
         
-        # add the final loss value into the title
+        # Add the final loss value to the title
         plt.title(f'Final Loss: {round(total_loss[-1])}')
         plt.tight_layout()
-        # #plt.show()
 
         if save:
-            folder = model_params['folder']
-            save_folder = f"{folder}/loss_graph/"
-            print("save_folder:" + save_folder)
-            if not os.path.exists(save_folder):
-                os.makedirs(save_folder)
-            plt.savefig(f"{save_folder}/loss_graph_split.png")
+            save_dir = f"{model_params['folder']}/loss_graph/"
+            print("Saving to:", save_dir)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            plt.savefig(f"{save_dir}/loss_graph_split.png")
     else:
-        # get loss
-        loss = model_params['loss']
+        # Get the main loss
+        loss_history = model_params['loss']
 
-        # initialise figure
-        k = 1; _w = 5; _h = 2*k; fig = plt.figure(figsize = (_w, _h))
-        #fig.canvas.layout.width = '{}in'.format(_w); fig.canvas.layout.height= '{}in'.format(_h)
-        ax = [ [ fig.add_subplot(j,1,i) for i in range(1,j+1) ] for j in [k] ][0]
+        # Set up figure dimensions
+        fig_width = 5
+        fig_height = 2
+        fig = plt.figure(figsize=(fig_width, fig_height))
+        
+        # Create subplot
+        ax = fig.add_subplot(1, 1, 1)
 
+        # Plot raw loss values
+        ax.plot(loss_history, '-b', label='Raw loss', alpha=0.3)
 
-        # plot original and predicted trajectories
-        ax[0].plot([_+0 for _ in loss], '-b', label = 'raw loss', alpha = 0.3)
+        # Apply Savitzky-Golay filter to smooth the loss curve
+        # Window size 13 (must be odd), polynomial order 3
+        smoothed_loss = np.abs(savgol_filter(loss_history, 13, 3))
+        ax.plot(smoothed_loss, '-b', label='Smoothed loss', alpha=0.8)
 
-        # smooth loss
-        # NOTE: commented out, and the line below because not working. what does the 13 mean???
-        train_loss = np.abs( savgol_filter(loss, 13, 3) )
-
-        # plot original and predicted trajectories
-        ax[0].plot([_+0 for _ in train_loss], '-b', label = 'smoothed loss', alpha = 0.8)
-
-
-        # format and display figure
-        if (scale == 'linear'):
+        # Set y-axis scale (log or linear)
+        if scale == 'linear':
             plt.yscale('linear')
         else:
             plt.yscale('log')
         
-        #plt.xscale('log')
-
+        # Labels and formatting
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.yticks([1, 10, 100, 1000], ['1', '10', '100', '1000'])
-
-        plt.title('loss graph')
-
+        plt.title('Training Loss')
         plt.legend()
         plt.tight_layout()
-        #plt.show()
 
         if save:
-            folder = model_params['folder']
-            save_folder = f"{folder}/loss_graph/"
-            if not os.path.exists(save_folder):
-                os.makedirs(save_folder)
-            plt.savefig(f"{save_folder}/loss_graph.png")
+            save_dir = f"{model_params['folder']}/loss_graph/"
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            plt.savefig(f"{save_dir}/loss_graph.png")
+
 
 def display_random_fit(model_params=parameters.model_params, dataset=parameters.dataset, show=True, save=False, random_samples=True):
-    ''' random assess model fit '''
-
-
-    # get data
-    trajs = dataset['trajs']
-    times = dataset['times']
-    y = dataset['y']
-
-    # get model
-    func = model_params['func']
-    rec = model_params['rec']
-    dec = model_params['dec']
-    optim = model_params['optim']
-    device = model_params['device']
-    epoch = model_params['epochs']
+    """
+    Display model fit on random samples from the dataset.
     
+    This function selects random trajectory samples, runs model inference on them,
+    and plots both the original data and model predictions for visual comparison.
+    
+    Parameters
+    ----------
+    model_params : dict
+        Dictionary containing model parameters and components
+        Required keys: 'func', 'rec', 'dec', 'optim', 'device', 'epochs', 'lr', 'beta', 'folder'
+    dataset : dict
+        Dictionary containing dataset components
+        Required keys: 'trajs', 'times', 'y'
+    show : bool, default=True
+        Whether to display the plot interactively
+    save : bool, default=False
+        Whether to save the plot to disk
+    random_samples : bool, default=True
+        If True, randomly sample trajectories; otherwise use sequential samples
+    
+    Returns
+    -------
+    None
+        The function creates and optionally saves a plot but doesn't return any values
+    """
+    # Extract data from dataset
+    trajectories = dataset['trajs']
+    time_points = dataset['times']
+    metadata = dataset['y']  # Contains parameters like intensity, bias, delay
 
-    # initialise figure
-    k = trajs[0].shape[-1]; _w = 7; _h = 4*k; fig = plt.figure(figsize = (_w, _h))
-    #fig.canvas.layout.width = '{}in'.format(_w); fig.canvas.layout.height= '{}in'.format(_h)
-    ax = [ [ fig.add_subplot(j,1,i) for i in range(1,j+1) ] for j in [k] ][0]
+    # Extract model components
+    model_func = model_params['func']
+    encoder = model_params['rec']
+    decoder = model_params['dec']
+    optimizer = model_params['optim']
+    device = model_params['device']
+    epoch_num = model_params['epochs']
+    
+    # Set up figure with subplots (one per trajectory dimension)
+    num_dims = trajectories[0].shape[-1]
+    fig_width = 7
+    fig_height = 4 * num_dims
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    
+    # Create a subplot for each dimension
+    axes = [fig.add_subplot(num_dims, 1, i+1) for i in range(num_dims)]
 
-    # generate inference function
-    infer_step = shjnn.make_infer_step(func, rec, dec, optim, device, _input = 'traj', _sample=False)
+    # Create inference function from the trained model
+    infer_step = shjnn.make_infer_step(
+        model_func, encoder, decoder, optimizer, device, 
+        input_mode='traj', sample=False
+    )
 
-    # select data
-    j = list(range(len(trajs)))
+    # Select indices of trajectories to plot
+    sample_indices = list(range(len(trajectories)))
     if random_samples:
-        random.shuffle(j)
+        random.shuffle(sample_indices)
 
-    # downsample
-    j = j[::30]
+    # Downsample to avoid cluttering the plot
+    sample_indices = sample_indices[::30]
 
-    # build colourmap
-    cnorm  = colors.Normalize(vmin = 0, vmax = len(j)); smap = cmx.ScalarMappable(norm = cnorm, cmap = 'brg')
+    # Create colormap for different trajectories
+    color_norm = colors.Normalize(vmin=0, vmax=len(sample_indices))
+    color_map = cmx.ScalarMappable(norm=color_norm, cmap='brg')
 
-    # iterate over transients
-    for _,i in enumerate(j):
+    # Iterate over selected trajectories
+    for idx, traj_idx in enumerate(sample_indices):
+        # Get color for this trajectory
+        color = color_map.to_rgba(idx)
         
-        # get colour
-        c = smap.to_rgba(_)
+        # Prepare input trajectory tensor
+        traj_tensor = trajectories[traj_idx].view(1, *trajectories[traj_idx].size()).to(device)
         
-        # send mini-batch to device
-        traj = trajs[i].view(1, *trajs[i].size()).to(device)
-        
-        #_time = np.linspace(-7.8, -4.2, 1000)#/10
-        #_time = np.linspace(-6.5+6.6, -4.2+6.6, 1000)#/10
-        
-        #+1 to account for time bias associated with removing the initial rise.
-        _time = np.linspace(0, 2.5, 1000) + 1#/10
-        
-        #_time = np.linspace(-7., -4.2, 1000)
-        #_time = np.logspace(-7.8, -4.2, 1000)
-        
-        #_time = np.logspace(0, 1.7, 20)
-        time = torch.Tensor(_time).to(device)
+        # Create time points for prediction (denser than original data)
+        pred_times = np.linspace(0, 2.5, 1000) + 1  # +1 accounts for time bias
+        time_tensor = torch.Tensor(pred_times).to(device)
 
-        # perform inference step for prediciton
-        pred_x, pred_z = infer_step(traj, time)
-        print(f"debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
-        # return prediction to cpu
-        pred_x = pred_x.cpu().numpy()[0]
+        # Run model inference
+        pred_x, pred_z = infer_step(traj_tensor, time_tensor)
+        print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
         
-        #print(pred_x.shape, pred_z[0,0,:])
+        # Convert prediction to numpy for plotting
+        pred_x_np = pred_x.cpu().numpy()[0]
         
-        _traj = trajs[i].cpu()
-        _t = times[i].cpu()
+        # Get original trajectory and time data
+        orig_traj = trajectories[traj_idx].cpu()
+        orig_time = time_points[traj_idx].cpu()
 
-        for l in range(k):
-            u = 0
+        # Scaling factor for better visualization
+        scale_factor = 50 * 1e2 / 1e3
+        
+        # Plot each dimension
+        for dim in range(num_dims):
+            # Plot original trajectory points
+            axes[dim].plot(orig_time, orig_traj[:, dim] / scale_factor, 
+                      '.', alpha=0.6, color=color)
             
-            #ax[k].set_ylim(-.8, .8)
-            sc_ = 50*1e2/1e3
+            # Plot model prediction
+            axes[dim].plot(pred_times - 1.0, pred_x_np[:, dim] / scale_factor, 
+                      '-', linewidth=2, alpha=0.4, color=color,
+                      label='{:.1f} J$, {:.1f} V, {:.0e} s'.format(
+                          metadata[traj_idx][0], metadata[traj_idx][1], metadata[traj_idx][2]))
             
-            # plot original and predicted trajectories
-            ax[l].plot(_t, _traj[:, l+u]/sc_, '.', alpha = 0.6, color = c)
-            ax[l].plot(_time - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} J$, {:.1f} V, {:.0e} s'.format(y[i][0], y[i][1], y[i][2]),
-                    linewidth = 2, alpha = 0.4, color = c)
-
-            
+    # Add labels and title
     plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
     plt.ylabel('Charge [mA]')
-    # tile includes epoch number, learning rate atnd beta
-    plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}'.format(epoch, model_params['lr'], model_params['beta']))
+    plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}'.format(
+        epoch_num, model_params['lr'], model_params['beta']))
 
-    #plt.xscale('log')
+    # Add legend
     plt.legend(loc='upper right', title='Intensity, Bias, Delay')
-
     plt.tight_layout()
 
+    # Show or save the figure
     if show:
         plt.show()
     if save:
-        #save as a png]
-        #todo: change
-        folder = model_params['folder']
-        #if saves folder does not exist create it
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        fig.savefig(f"{folder}/training_epoch_{epoch:04d}.png", dpi=300)
+        save_dir = model_params['folder']
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        fig.savefig(f"{save_dir}/training_epoch_{epoch_num:04d}.png", dpi=300)
 
 
 def compile_learning_gif(model_params=parameters.model_params, display=True):
-    # compile gif from png in saves folder
-    # set read destinatino here
-    folder = model_params['folder']
-    glob_target = folder + '/*.png'
-    print(glob_target)
-    files = sorted(glob.glob(glob_target))
-    image_array = []
-
-    for my_file in files:
-        
-        image = Image.open(my_file)
-        image_array.append(image)
-
-    print('image_arrays shape:', np.array(image_array).shape)
-
-    # Create the figure and axes objects
-    fig, ax = plt.subplots()
-
-    # Set the initial image
-    im = ax.imshow(image_array[0], animated=True)
-
-    def update(i):
-        im.set_array(image_array[i])
-        return im, 
-
-    # Create the animation object
-    animation_fig = animation.FuncAnimation(fig, update, frames=len(image_array), interval=200, blit=True, repeat_delay=5000,)
-
-    # Show the animation
-    #plt.show()
-
-    # animation_fig.save("gifs/animated_GMM.gif")
-
+    """
+    Compile a GIF animation from training epoch visualizations.
     
-    # to html5 video using pillow
-    if not os.path.exists(folder + "/gifs/"):
-        os.makedirs(folder + "/gifs/")
-    animation_fig.save(folder + "/gifs/learning_pattern.gif", writer="pillow")
+    This function reads PNG files saved during training and compiles them into an
+    animated GIF to visualize the model's learning progress over time.
+    
+    Parameters
+    ----------
+    model_params : dict
+        Dictionary containing model parameters
+        Required key: 'folder' - directory where training visualizations are stored
+    display : bool, default=True
+        Whether to display the animation (currently not implemented)
+    
+    Returns
+    -------
+    None
+        The function creates and saves a GIF animation but doesn't return any values
+    """
+    # Get directory containing the visualization images
+    image_dir = model_params['folder']
+    glob_pattern = image_dir + '/*.png'
+    print("Looking for images in:", glob_pattern)
+    
+    # Get sorted list of image files
+    image_files = sorted(glob.glob(glob_pattern))
+    image_list = []
 
-    # if (display):
-    #     video = animation_fig.to_html5_video()
+    # Read all images
+    for image_file in image_files:
+        image = Image.open(image_file)
+        image_list.append(image)
+
+    print('Animation will contain', len(image_list), 'frames')
+
+    # Create figure for animation
+    fig, ax = plt.subplots()
+    
+    # Set initial image
+    animation_image = ax.imshow(image_list[0], animated=True)
+
+    # Animation update function
+    def update_frame(frame_idx):
+        animation_image.set_array(image_list[frame_idx])
+        return animation_image, 
+
+    # Create the animation
+    anim = animation.FuncAnimation(
+        fig, update_frame, frames=len(image_list),
+        interval=200,  # milliseconds between frames
+        blit=True, 
+        repeat_delay=5000,  # delay before looping
+    )
+
+    # Create output directory if it doesn't exist
+    gif_dir = image_dir + "/gifs/"
+    if not os.path.exists(gif_dir):
+        os.makedirs(gif_dir)
+        
+    # Save the animation as a GIF
+    anim.save(gif_dir + "learning_pattern.gif", writer="pillow")
+
+    # TODO: Implement HTML5 video display if needed
+    # if display:
+    #     from IPython import display
+    #     video = anim.to_html5_video()
     #     html = display.HTML(video)
-    #     display.display(html) 
+    #     display.display(html)
+
 
 def sweep_latent_adaptives(model_params, dataset):
-    for j in range(model_params['latent_dim']):
-        sweep_latent_adaptive(model_params, dataset, j)
+    """
+    Generate visualizations for all latent dimensions.
+    
+    This function iterates through all latent dimensions of the model and
+    creates a visualization for each one showing how it affects the output.
+    
+    Parameters
+    ----------
+    model_params : dict
+        Dictionary containing model parameters
+        Required key: 'latent_dim' - number of latent dimensions in the model
+    dataset : dict
+        Dictionary containing dataset components
+    
+    Returns
+    -------
+    None
+        The function delegates to sweep_latent_adaptive for each dimension
+    """
+    for dim_idx in range(model_params['latent_dim']):
+        sweep_latent_adaptive(model_params, dataset, dim_idx)
+
 
 def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
-    ''' get z0 prediction of complete dataset '''
+    """
+    Visualize the effect of varying a specific latent dimension.
+    
+    This function generates predictions by varying the value of a single latent
+    dimension while keeping others fixed at their mean values. This helps understand
+    what feature each latent dimension encodes.
+    
+    Parameters
+    ----------
+    model_params : dict
+        Dictionary containing model parameters and components
+        Required keys: 'func', 'rec', 'dec', 'optim', 'device', 'epochs', 
+                        'latent_dim', 'folder'
+    dataset : dict
+        Dictionary containing dataset components
+        Required keys: 'trajs', 'times', 'y'
+    latent_dim_number : int
+        Index of the latent dimension to vary
+    
+    Returns
+    -------
+    None
+        The function creates and saves a plot but doesn't return any values
+    """
+    # Extract data from dataset
+    trajectories = dataset['trajs']
+    time_points = dataset['times']
+    metadata = dataset['y']
 
-    # get data
-    trajs = dataset['trajs']
-    times = dataset['times']
-    y = dataset['y']
-
-    #get model
-    func = model_params['func']
-    rec = model_params['rec']
-    dec = model_params['dec']
-    optim = model_params['optim']
+    # Extract model components
+    model_func = model_params['func']
+    encoder = model_params['rec']
+    decoder = model_params['dec']
+    optimizer = model_params['optim']
     device = model_params['device']
-    epoch = model_params['epochs']
+    epoch_num = model_params['epochs']
     latent_dims = model_params['latent_dim']
 
-    # generate inference function
-    infer_step = shjnn.make_infer_step(func, rec, dec, optim, device, _input = 'traj', _sample=False)
+    # Create inference function for trajectory encoding
+    infer_step_encode = shjnn.make_infer_step(
+        model_func, encoder, decoder, optimizer, device, 
+        input_mode='traj', sample=False
+    )
 
-    # select data
-    j = list(range(len(trajs)))
-    #random.shuffle(j)
+    # Get indices of all trajectories
+    sample_indices = list(range(len(trajectories)))
 
-    Z = []
-
-    Zz = []
-
-    for i in j[::]:
+    # Arrays to store latent vectors
+    latent_vectors = []      # First timestep only
+    all_latent_vectors = []  # All timesteps
+    
+    # Process each trajectory to collect latent representations
+    for idx in sample_indices:
+        # Prepare trajectory tensor
+        traj_tensor = trajectories[idx].view(1, *trajectories[idx].size()).to(device)
         
-        # send mini-batch to device
-        traj = trajs[i].view(1, *trajs[i].size()).to(device)
+        # Create time points tensor
+        pred_times = np.linspace(0, 2.5, 1000)
+        time_tensor = torch.Tensor(pred_times).to(device)
+
+        # Get model prediction and latent vectors
+        pred_x, pred_z = infer_step_encode(traj_tensor, time_tensor)
         
-        _time = np.linspace(0, 2.5, 1000)#/10
+        # Store latent vectors
+        latent_vectors.append(pred_z[0, 0, ...].detach().numpy())  # First timestep only
+        all_latent_vectors.append(pred_z[0, ...].detach().numpy())  # All timesteps
         
-        #_time = np.linspace(-7., -4.2, 1000)
-        #_time = np.logspace(-7.8, -4.2, 1000)
+    # Convert lists to numpy arrays
+    latent_vectors = np.stack(latent_vectors)
+    all_latent_vectors = np.stack(all_latent_vectors)
+    
+    print("Latent vectors shape:", latent_vectors.shape, 
+          "All timesteps shape:", all_latent_vectors.shape)
+
+    # Set up figure for latent dimension sweep visualization
+    num_dims = trajectories[0].shape[-1]
+    fig_width = 7
+    fig_height = 4 * num_dims
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    
+    # Create subplot for plotting the predictions
+    ax = fig.add_subplot(1, 1, 1)
+
+    # Create inference function for latent space decoding
+    infer_step_decode = shjnn.make_infer_step(
+        model_func, encoder, decoder, optimizer, device, 
+        input_mode='latent'
+    )
+
+    # Define range of values to test for the selected latent dimension
+    range_size = 3  # +/- 3 standard deviations
+    test_values = np.linspace(-range_size, range_size, 10)
+
+    # Create colormap for the different test values
+    color_norm = colors.Normalize(vmin=0, vmax=len(test_values))
+    color_map = cmx.ScalarMappable(norm=color_norm, cmap='cividis')
+
+    # Test each value in the range
+    for i, test_value in enumerate(test_values):
+        # Get color for this test value
+        color = color_map.to_rgba(i)
+
+        # Start with the mean latent vector from the dataset
+        base_latent = np.expand_dims(np.mean(latent_vectors, 0), 0)
         
-        #_time = np.logspace(0, 1.7, 20)
-        time = torch.Tensor(_time).to(device)
-
-        # perform inference step for prediciton
-        pred_x, pred_z = infer_step(traj, time)
+        # Modify the target dimension with the test value
+        base_latent[..., latent_dim_number] += test_value
         
-        Z.append(pred_z[0, 0, ...].detach().numpy())
-        
-        Zz.append(pred_z[0, ...].detach().numpy())
+        # Convert to tensor and move to device
+        latent_tensor = torch.Tensor(base_latent).to(device)
 
-        # return prediction to cpu
-        pred_x = pred_x.cpu().numpy()[0]
-        
-    Z = np.stack(Z)
-    Zz = np.stack(Zz)
+        # Create time points tensor
+        pred_times = np.linspace(0, 2.5, 1000)
+        time_tensor = torch.Tensor(pred_times).to(device)
 
-    print(Z.shape, Zz.shape)
+        # Get model prediction from the modified latent vector
+        pred_x, pred_z = infer_step_decode(latent_tensor, time_tensor)
 
-    ''' sweep latent adaptives '''
+        # Convert prediction to numpy for plotting
+        pred_x_np = pred_x.cpu().numpy()[0]
 
-    # initialise figure
-    k = trajs[0].shape[-1]; _w = 7; _h = 4*k; fig = plt.figure(figsize = (_w, _h))
-    #fig.canvas.layout.width = '{}in'.format(_w); fig.canvas.layout.height= '{}in'.format(_h)
-    ax = [ [ fig.add_subplot(j,1,i) for i in range(1,j+1) ] for j in [k] ][0]
-    # setup ax for each latent dim
-
-
-    # generate inference function
-    #infer_step = shjnn.make_infer_step(func, rec, dec, optim, device, _input = 'traj', _sample=False)
-    infer_step = shjnn.make_infer_step(func, rec, dec, optim, device, _input = 'latent')
-
-    # set z dim to sweep
-    j = latent_dim_number
-    # for j in range(latent_dims):
-
-    # set range over latent vector
-    rr = 3
-    _ = np.linspace(-rr,rr,10)
-
-    # colourmap
-    cnorm  = colors.Normalize(vmin = 0, vmax = len(_)); smap = cmx.ScalarMappable(norm = cnorm, cmap = 'cividis')
-
-    # iterate over latent vector range
-    for i in range(len(_)):
-        _z = _[i]
-        c = smap.to_rgba(i)
-
-        # set init latent to mean of dataset or zeros
-        _z0 = np.expand_dims(np.mean(Z, 0),0)
-        #_z0 = np.expand_dims(np.zeros(Z.shape[-1]),0)
-        
-        # update latent vector for variation
-        _z0[...,j] += _z
-        #print(_z0)
-        
-        z0 = torch.Tensor(_z0).to(device)
-
-        # define time axis
-        _time = np.linspace(0, 2.5, 1000)#/10
-        time = torch.Tensor(_time).to(device)
-
-        # perform inference step for prediciton
-        pred_x, pred_z = infer_step(z0, time)
-
-        # return prediction to cpu
-        pred_x = pred_x.cpu().numpy()[0]
-
-        # plot predicted trajectories
-        ax[0].plot(_time, pred_x[:, 0], '-', label = 'z{}, {:.1f} + {:.1f}'.format(j, np.mean(Z, 0)[j],_z), alpha = 0.6, color = c, linewidth = 2)
-
+        # Plot the prediction for the first dimension
+        label = 'z{}, {:.1f} + {:.1f}'.format(
+            latent_dim_number, 
+            np.mean(latent_vectors, 0)[latent_dim_number],
+            test_value
+        )
+        ax.plot(pred_times, pred_x_np[:, 0], '-', 
+               label=label, alpha=0.6, color=color, linewidth=2)
             
+    # Add labels and formatting
     plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
     plt.ylabel('Charge [mA]')
 
-    plt.hlines(0., -.1, 2.6, colors = 'k', linestyle = '--', alpha = 0.5)
-    plt.xlim(-.1,2.6)
+    # Add horizontal line at y=0
+    plt.hlines(0., -.1, 2.6, colors='k', linestyle='--', alpha=0.5)
+    plt.xlim(-.1, 2.6)
             
     plt.legend()
-        
-    #plt.xscale('log')
     plt.tight_layout()
-    #plt.show()
 
-    folder = model_params['folder']
-    #if saves folder does not exist create it
-    if not os.path.exists(folder + '/latent_dims'):
-        os.makedirs(folder + '/latent_dims')
-    fig.savefig(folder + f'/latent_dims/epoch_{epoch}_dim_{latent_dim_number}.png', dpi=300)
+    # Save the figure
+    save_dir = model_params['folder'] + '/latent_dims'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    fig.savefig(save_dir + f'/epoch_{epoch_num}_dim_{latent_dim_number}.png', dpi=300)
