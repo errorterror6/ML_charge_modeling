@@ -266,6 +266,7 @@ def load_data(data_out=parameters.dataset):
     n['props']['intensity'],
     n['props']['voltage'],
     n['props']['delay'],
+    n['props']['thickness'],
     ]
         for n in _db ])
 
