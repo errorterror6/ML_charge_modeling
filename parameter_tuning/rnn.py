@@ -80,18 +80,14 @@ class RNN(nn.Module):
         #   - Predict obs[:, t+1, :].
         it = 0
         for t in range(seq_len - 1):
-            # Prepare current input: shape [batch, 1, features]
-            # NOTE: temporary code. it <=5 is meant to be replaced with the features of the thing.
-            if train or it <= 5:
-                current_input = obs[:, t, :].unsqueeze(1)
-                it += 1
+            # RNN is given information about the whole sequence.
+            current_input = obs[:, t, :].unsqueeze(1)
 
             # Forward pass for a single time step
             try:
                 #TODO: this should feed it's own input for evaluation
                 #TODO: could be interested to compare both methods.
                 out, hidden = self.forward(current_input, hidden)
-                current_input = out
                 # Expected out shape: [batch, 1, output_dim]
             except KeyboardInterrupt:
                 print("Training interrupted by user.")
