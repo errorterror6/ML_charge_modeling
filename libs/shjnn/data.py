@@ -110,7 +110,7 @@ class CustomDataset(Dataset):
         y (list): List of time point tensors
     """
 
-    def __init__(self, trajectories, time_points):
+    def __init__(self, trajectories, time_points, metadata=None):
         """
         Initialize the dataset with trajectories and time points.
         
@@ -120,6 +120,7 @@ class CustomDataset(Dataset):
         """
         self.x = trajectories
         self.y = time_points
+        self.metadata = metadata
 
     def __getitem__(self, index):
         """
@@ -131,7 +132,10 @@ class CustomDataset(Dataset):
         Returns:
             tuple: (trajectory, time_points) at the given index
         """
-        return (self.x[index], self.y[index])
+        if self.metadata is not None:
+            return (self.x[index], self.y[index], self.metadata[index])
+        else:
+            return (self.x[index], self.y[index])
 
     def __len__(self):
         """

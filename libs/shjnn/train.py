@@ -97,14 +97,14 @@ def make_train_step(dynamics_func, recognition_network, decoder, optimizer, devi
         noise_logvar = 2.0 * torch.log(noise_std_tensor).to(device)
         
         # Log probability of observations under predicted distribution (reconstruction loss)
-        log_px = log_normal_pdf(trajectory, pred_x, noise_logvar).squeeze().sum(-1)
+        log_px = log_normal_pdf(trajectory, pred_x, noise_logvar).squeeze().mean(-1)
         log_px = log_px / trajectory.size(0)  # Normalize by batch size
         
         # Prior distribution parameters (standard normal)
         prior_mean = prior_logvar = torch.zeros(latent_z0.size()).to(device)
         
         # KL divergence between posterior and prior
-        kl_divergence = normal_kl(latent_mean, latent_logvar, prior_mean, prior_logvar).sum(-1)
+        kl_divergence = normal_kl(latent_mean, latent_logvar, prior_mean, prior_logvar).mean(-1)
         
         # Total loss (negative ELBO)
         loss = torch.mean(-log_px + beta * kl_divergence)

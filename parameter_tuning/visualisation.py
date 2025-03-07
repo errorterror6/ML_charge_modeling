@@ -69,23 +69,27 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # Create main subplot
         main_ax = fig.add_subplot(1, 1, 1)
 
+        # Create epoch numbers for x-axis - scale by 10 to fix epoch display
+        # The issue is that the loss is recorded every 0.1 epochs (10 times per epoch)
+        epochs = np.arange(1, len(mse_loss) + 1) * 10
+        
         # Plot MSE loss with red color on the primary y-axis
         if plot_MSE:
-            main_ax.plot(mse_loss, '-r', label='MSE loss', alpha=0.3, color='red')
+            main_ax.plot(epochs, mse_loss, '-', label='MSE loss', alpha=0.3, color='red')
             main_ax.set_yscale('log')
             main_ax.set_ylabel('MSE Loss')
 
         # Plot total loss with blue color on a secondary y-axis
         if plot_total:
             total_ax = main_ax.twinx()
-            total_ax.plot(total_loss, '-b', label='Total loss', alpha=0.3, color='blue')
+            total_ax.plot(epochs, total_loss, '-', label='Total loss', alpha=0.3, color='blue')
             total_ax.set_yscale('log')
             total_ax.set_ylabel('Total Loss')
 
         # Plot KL loss with green color on another secondary y-axis
         if plot_KL:
             kl_ax = main_ax.twinx()
-            kl_ax.plot(kl_loss, '-g', label='KL loss', alpha=0.3, color='green')
+            kl_ax.plot(epochs, kl_loss, '-', label='KL loss', alpha=0.3, color='green')
             kl_ax.set_ylabel('KL Loss')
 
         # Optional: Plot smoothed losses using Savitzky-Golay filter
@@ -93,8 +97,8 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # poly_order = 3    # polynomial order for the filter
         # smoothed_mse = np.abs(savgol_filter(mse_loss, window_size, poly_order))
         # smoothed_kl = np.abs(savgol_filter(kl_loss, window_size, poly_order))
-        # main_ax.plot(smoothed_mse, '-r', alpha=0.8)
-        # kl_ax.plot(smoothed_kl, '-g', alpha=0.8)
+        # main_ax.plot(epochs, smoothed_mse, '-', alpha=0.8, color='red')
+        # kl_ax.plot(epochs, smoothed_kl, '-', alpha=0.8, color='green')
 
         # Labels and legend
         main_ax.set_xlabel('Epochs')
@@ -129,13 +133,17 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # Create subplot
         ax = fig.add_subplot(1, 1, 1)
 
+        # Create epoch numbers for x-axis - scale by 10 to fix epoch display
+        # The issue is that the loss is recorded every 0.1 epochs (10 times per epoch)
+        epochs = np.arange(1, len(loss_history) + 1) * 10
+        
         # Plot raw loss values
-        ax.plot(loss_history, '-b', label='Raw loss', alpha=0.3)
+        ax.plot(epochs, loss_history, '-', label='Raw loss', alpha=0.3, color='blue')
 
         # Apply Savitzky-Golay filter to smooth the loss curve
         # Window size 13 (must be odd), polynomial order 3
         smoothed_loss = np.abs(savgol_filter(loss_history, 13, 3))
-        ax.plot(smoothed_loss, '-b', label='Smoothed loss', alpha=0.8)
+        ax.plot(epochs, smoothed_loss, '-', label='Smoothed loss', alpha=0.8, color='blue')
 
         # Set y-axis scale (log or linear)
         if scale == 'linear':
