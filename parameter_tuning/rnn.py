@@ -85,8 +85,6 @@ class RNN(nn.Module):
 
             # Forward pass for a single time step
             try:
-                #TODO: this should feed it's own input for evaluation
-                #TODO: could be interested to compare both methods.
                 out, hidden = self.forward(current_input, hidden)
                 # Expected out shape: [batch, 1, output_dim]
             except KeyboardInterrupt:
@@ -211,16 +209,18 @@ class RNN(nn.Module):
 
                 # Validation phase
                 epoch_val_loss = 0
+                loss_list = []
                 with torch.no_grad():  # Disable gradient computation
                     for x_batch, y_batch in val_loader:
                         _loss, prediction, obs = self.eval_step(x_batch, y_batch)
+                        loss_list.append(_loss)
                         #debugging step TODO: remove
                         records['predictions'] = prediction
                         records['targets'] = obs
 
 
                 # Compute average validation loss for the epoch
-                epoch_val_loss = _loss / len(val_loader)
+                epoch_val_loss = np.mean(loss_list)
                 val_loss_history.append(epoch_val_loss)
                 self.model_params['loss'].append(epoch_val_loss)
                 self.model_params['MSE_loss'].append(epoch_val_loss)
