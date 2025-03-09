@@ -216,9 +216,9 @@ class RNN(nn.Module):
                 loss_list = []
                 with torch.no_grad():  # Disable gradient computation
                     for x_batch, y_batch in val_loader:
-                        debug_counter += 1
                         _loss, prediction, obs = self.eval_step(x_batch, y_batch)
                         loss_list.append(_loss)
+                        
                         #debugging step TODO: remove
                         records['predictions'] = prediction
                         records['targets'] = obs

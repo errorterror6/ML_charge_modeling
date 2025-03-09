@@ -154,7 +154,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # Labels and formatting
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
-        plt.yticks([1, 10, 100, 1000], ['1', '10', '100', '1000'])
+        plt.yticks([0.1, 1, 10, 100, 1000], ['0.1', '1', '10', '100', '1000'])
         plt.title('Training Loss')
         plt.legend()
         plt.tight_layout()
