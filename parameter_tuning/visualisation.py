@@ -197,6 +197,9 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     trajectories = dataset['trajs']
     time_points = dataset['times']
     metadata = dataset['y']  # Contains parameters like intensity, bias, delay
+    
+    print(f"Debug: B-VAE: visualisation: display_random: trajectories shape: {trajectories.shape}")
+    print(f"Debug: B-VAE: visualisation: display_random: time_points shape: {time_points.shape}")
 
     # Extract model components
     model_func = model_params['func']
@@ -232,7 +235,7 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     # Create colormap for different trajectories
     color_norm = colors.Normalize(vmin=0, vmax=len(sample_indices))
     color_map = cmx.ScalarMappable(norm=color_norm, cmap='brg')
-
+    
     # Iterate over selected trajectories
     for idx, traj_idx in enumerate(sample_indices):
         # Get color for this trajectory
@@ -240,22 +243,22 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
         
         # Prepare input trajectory tensor
         traj_tensor = trajectories[traj_idx].view(1, *trajectories[traj_idx].size()).to(device)
-        
+        # print(f"Debug: B-VAE: visualisation: display_random: traj_tensor shape: {traj_tensor.shape}")
         # Create time points for prediction (denser than original data)
         pred_times = np.linspace(0, 2.5, 1000) + 1  # +1 accounts for time bias
         time_tensor = torch.Tensor(pred_times).to(device)
 
         # Run model inference
         pred_x, pred_z = infer_step(traj_tensor, time_tensor)
-        print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
-        
+        # print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
+
         # Convert prediction to numpy for plotting
         pred_x_np = pred_x.cpu().numpy()[0]
         
         # Get original trajectory and time data
         orig_traj = trajectories[traj_idx].cpu()
         orig_time = time_points[traj_idx].cpu()
-
+        # print(f"Debug: B-VAE: visualisation: display_random: orig_traj shape: {orig_traj.shape}")
         # Scaling factor for better visualization
         scale_factor = 50 * 1e2 / 1e3
         

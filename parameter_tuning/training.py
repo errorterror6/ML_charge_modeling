@@ -49,29 +49,32 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
     device = model_params['device']
 
     # run training for epochs, return loss
-    try:
-        _epochs, _loss, _MSE_loss, _KL_loss = shjnn.train(func, rec, dec, optim, trajs[:], times[:], n_epochs, n_batch, device, beta)
-        print('Logs: training: B_VAE_training_loop: Try')
-        # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
+    # try:
+    _epochs, _loss, _MSE_loss, _KL_loss = shjnn.train(func, rec, dec, optim, trajs[:], times[:], n_epochs, n_batch, device, beta)
+    print('Logs: training: B_VAE_training_loop: Try')
+    # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
+    
+    
+    parameters.model.eval(model_params, dataset)
 
-        # update loss, epochs
-        model_params['epochs'] += _epochs
-        print(f'debug: printing out _epochs: {_epochs}')
-        model_params['loss'].append(np.average(_loss))
-        print(f'debug: printing out mse loss: {np.average(_MSE_loss)}')
-        model_params['MSE_loss'].append(np.average(_MSE_loss))
-        model_params['KL_loss'].append(np.average(_KL_loss))
+    # update loss, epochs
+    model_params['epochs'] += _epochs
+    print(f'debug: printing out _epochs: {_epochs}')
+    model_params['loss'].append(np.average(_loss))
+    print(f'debug: printing out mse loss: {np.average(_MSE_loss)}')
+    model_params['MSE_loss'].append(np.average(_MSE_loss))
+    model_params['KL_loss'].append(np.average(_KL_loss))
 
-    except:
+    # except:
         
-        model_params['epochs'] += model_params['epochs'][-1]
-        model_params['loss'].append(model_params['loss'][-1])
-        model_params['MSE_loss'].append(model_params['MSE_loss'][-1])
-        model_params['KL_loss'].append(model_params['KL_loss'][-1])
-        print('==================================')
-        print('Logs: training: B_VAE_training_loop: Exception raised, shjnn failed.')
-        print('loss', model_params['loss'], 'epochs', model_params['epochs'], 'MSE_loss', model_params['MSE_loss'], 'KL_loss', model_params['KL_loss'])
-        print('==================================')
+    #     model_params['epochs'] += model_params['epochs'][-1]
+    #     model_params['loss'].append(model_params['loss'][-1])
+    #     model_params['MSE_loss'].append(model_params['MSE_loss'][-1])
+    #     model_params['KL_loss'].append(model_params['KL_loss'][-1])
+    #     print('==================================')
+    #     print('Logs: training: B_VAE_training_loop: Exception raised, shjnn failed.')
+    #     print('loss', model_params['loss'], 'epochs', model_params['epochs'], 'MSE_loss', model_params['MSE_loss'], 'KL_loss', model_params['KL_loss'])
+    #     print('==================================')
 
     return model_params
 
