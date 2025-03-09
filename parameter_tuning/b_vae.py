@@ -40,12 +40,11 @@ class B_VAE:
         for idx, traj_idx in enumerate(sample_indices):
             traj_tensor = trajectories[traj_idx].view(1, *trajectories[traj_idx].size()).to(device)
             time_tensor = time_points[traj_idx].view(1, *time_points[traj_idx].size()).to(device)
+            
             pred_x, pred_z = infer_step(traj_tensor, time_tensor)
-            #File "C:\vscode\thesis\ML_charge_modeling\parameter_tuning\b_vae.py", line 44, in eval
-                 #loss = torch.nn.MSELoss(pred_x, traj_tensor)
-            #TODO: fix this by transforming traj_tensor. check if pred_x is both time and traj or traj only. then match that with the traj/time tensor.
-            #just print out the shapes of each and match them - should be enough.
-            loss = torch.nn.MSELoss(pred_x, traj_tensor)
+            
+            #currently both at [1, 70, 1]
+            loss = torch.nn.MSELoss()(pred_x, traj_tensor)
             loss_list.append(loss.item())
         print(f"logs: b_vae: eval: mean loss over {len(sample_indices)} samples: {np.mean(loss_list)} at epoch {epoch_num}.") 
         return np.mean(loss_list)
