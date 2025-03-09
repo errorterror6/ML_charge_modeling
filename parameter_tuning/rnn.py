@@ -170,7 +170,7 @@ class RNN(nn.Module):
         """
         # Initialize dataset
         data = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
-
+        print(f"debug: rnn: train: dataset shape: {len(data)}")
         # Split dataset into training and validation sets
         # TODO: this is technically a good idea but the dataset produces 9 mini-batches in total which makes this split not viable.
         # good to look into this in the future
@@ -182,6 +182,7 @@ class RNN(nn.Module):
         train_dataset = data
 
         # Initialize data loaders
+        
         train_loader = DataLoader(train_dataset, batch_size=model_params['n_batch'], shuffle=True, drop_last=True)
         # TODO: begin temporary code. Extract the first batch
         first_batch = next(iter(train_loader))
@@ -189,7 +190,10 @@ class RNN(nn.Module):
 
         # Create val_loader
         val_dataset = TensorDataset(inputs, targets)
-        val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+        
+        #evaluation is performed across the whole set. one batch only.
+        val_loader = DataLoader(val_dataset, batch_size=len(data), shuffle=False)
+        
         #TODO: part of the above TODO's. above line of code is temporary fix.
         # val_loader = shjnn.DataLoader(val_dataset, batch_size=model_params['n_batch'], shuffle=False, drop_last=True)
 
@@ -212,6 +216,7 @@ class RNN(nn.Module):
                 loss_list = []
                 with torch.no_grad():  # Disable gradient computation
                     for x_batch, y_batch in val_loader:
+                        debug_counter += 1
                         _loss, prediction, obs = self.eval_step(x_batch, y_batch)
                         loss_list.append(_loss)
                         #debugging step TODO: remove
@@ -334,23 +339,13 @@ class RNN(nn.Module):
     class Visualiser:
 
         """
-
         Visualization class for RNN models.
-
-        
-
         This class provides methods for visualizing training history, model predictions, 
-
         and creating animations of the training process for RNN models.
-
-        
-
         Attributes
-
         ----------
 
         RNN : RNN
-
             Reference to the parent RNN model instance
 
         """
