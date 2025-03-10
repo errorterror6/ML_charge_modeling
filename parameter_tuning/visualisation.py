@@ -237,6 +237,7 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     color_map = cmx.ScalarMappable(norm=color_norm, cmap='brg')
     
     # Iterate over selected trajectories
+    loss_list = []
     for idx, traj_idx in enumerate(sample_indices):
         # Get color for this trajectory
         color = color_map.to_rgba(idx)
@@ -250,6 +251,14 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
 
         # Run model inference
         pred_x, pred_z = infer_step(traj_tensor, time_tensor)
+        
+        #Run model inference for loss reasons only
+        loss_x, _ = infer_step(traj_tensor, time_points[traj_idx].view(1, *time_points[traj_idx].size()).to(device))
+        
+        # TODO: how do i calculate the loss of the MSE here??
+        
+        loss = torch.nn.MSELoss()(loss_x, traj_tensor)
+        loss_list.append(loss.item())
         # print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
 
         # Convert prediction to numpy for plotting
@@ -277,8 +286,8 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     # Add labels and title
     plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
     plt.ylabel('Charge [mA]')
-    plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}'.format(
-        epoch_num, model_params['lr'], model_params['beta']))
+    plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}, loss: {:.1e}'.format(
+        epoch_num, model_params['lr'], model_params['beta'], np.mean(loss_list)))
 
     # Add legend
     plt.legend(loc='upper right', title='Intensity, Bias, Delay')
