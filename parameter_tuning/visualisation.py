@@ -228,9 +228,10 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     sample_indices = list(range(len(trajectories)))
     if random_samples:
         random.shuffle(sample_indices)
-
-    # Downsample to avoid cluttering the plot
-    sample_indices = sample_indices[::30]
+        # Downsample to avoid cluttering the plot
+        sample_indices = sample_indices[::30]
+    else:
+        sample_indices = model_params['plot']
 
     # Create colormap for different trajectories
     color_norm = colors.Normalize(vmin=0, vmax=len(sample_indices))

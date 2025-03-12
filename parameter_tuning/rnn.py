@@ -387,19 +387,20 @@ class RNN(nn.Module):
             datas = torch.cat((trajs, times), dim=-1)
             print(f"debug: rnn: visualiser: display: datas shape: {datas.shape}")
             # select data
-            j = list(range(len(datas)))
+            sample_indices = list(range(len(datas)))
             if random_samples:
-                random.shuffle(j)
-
-            # downsample
-            j = j[::30]
+                random.shuffle(sample_indices)
+                # Downsample to avoid cluttering the plot
+                sample_indices = sample_indices[::30]
+            else:
+                sample_indices = model_params['plot']
 
             # build colourmap
-            cnorm  = colors.Normalize(vmin = 0, vmax = len(j)); smap = cmx.ScalarMappable(norm = cnorm, cmap = 'brg')
+            cnorm  = colors.Normalize(vmin = 0, vmax = len(sample_indices)); smap = cmx.ScalarMappable(norm = cnorm, cmap = 'brg')
 
             # iterate over transients
             loss_list = []
-            for _,i in enumerate(j):
+            for _,i in enumerate(sample_indices):
                 
                 # get colour
                 c = smap.to_rgba(_)

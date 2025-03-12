@@ -65,7 +65,10 @@ model_params = {
     'loss_thresh': 0.0001,
     'MSE_loss': [],
     'KL_loss': [],
-
+    
+    #specifying which trajectories to use (0 - 149 are available)
+    'plot': [0, 1, 2, 3, 4],
+    'random': False,
     
 
     #labels
