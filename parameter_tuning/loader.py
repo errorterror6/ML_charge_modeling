@@ -327,7 +327,7 @@ def load_model_params():
     epoch = 5   #enter your desired epoch to extract here
     with open(folder + f'/model/model_params_{epoch}.json', 'r') as fp:
         model_params = json.load(fp)
-        init.init_model(model_params)
+        # init.init_model(model_params)
     return model_params
 
 def clear_saves():
@@ -419,6 +419,8 @@ def load_model(model_params):
     folder = ""
     epoch = 5   #enter your desired epoch to extract here
     path = folder + f'/model/save_model_ckpt_{epoch}.pth'
-    #dev = 'gpu'
-    dev = 'cpu'
-    shjnn.load_state(path, model_params['func'], model_params['rec'], dec = model_params['dec'], optim = model_params['optim'], loss = model_params['loss'], epochs = model_params['epochs'], dev = dev)
+    try:
+        load_model_params()
+    except:
+        print("Logs: Loader: load_model: no model params found, loading model without model params.")
+    parameters.model.load_model(model_params, path)

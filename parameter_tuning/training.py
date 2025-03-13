@@ -201,6 +201,7 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         parameters.model.visualiser.display_random_fit(show=False, random_samples=model_params['random'])
     parameters.model.visualiser.plot_training_loss(model_params, save=True, split=True)
     # loader.save_model_params(model_params)
+    parameters.model.save_model(model_params)
     # parameters.model.Visualiser.compile_learning_gif(model_params, display=False)
     print("logs: Training: Finished training")
     return model_params

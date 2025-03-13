@@ -3,6 +3,8 @@ import torch
 from torch import nn
 import visualisation
 import numpy as np
+import loader
+import os
 
 import sys
 sys.path.append('../libs/')
@@ -49,8 +51,30 @@ class B_VAE:
         print(f"logs: b_vae: eval: mean loss over {len(sample_indices)} samples: {np.mean(loss_list)} at epoch {epoch_num}.") 
         return np.mean(loss_list)
             
-            
+    def save_model(self, model_params):
+        #save model params as json file
+        folder = model_params['folder']
+        epoch = model_params['epochs']
+        if not os.path.exists(folder + '/model'):
+            os.makedirs(folder + '/model')
+
+        # save model
+        #load model params
+        func = model_params['func']
+        rec = model_params['rec']
+        dec = model_params['dec']
+        optim = model_params['optim']
+        loss = model_params['loss']
+        epochs = model_params['epochs']
+        folder = model_params['folder']
+        path = folder + f'/model/save_model_ckpt_{epoch}.pth'
+        shjnn.save_state(path, func, rec, dec, optim, loss, epochs) 
         
+        loader.save_model_params(model_params)
+        
+    def load_model(self, model_params):
+        shjnn.load_state(path, model_params['func'], model_params['rec'], dec = model_params['dec'], optim = model_params['optim'], loss = model_params['loss'], epochs = model_params['epochs'], dev = dev)
+
 
     class Visualiser:
         def __init__(self, b_vae_instance):
