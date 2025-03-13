@@ -9,6 +9,8 @@ from numpy import random
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
+import loader
+
 
 import sys
 sys.path.append('../libs/')
@@ -335,8 +337,28 @@ class RNN(nn.Module):
         
         return pred_x_extrapolated
 
+    def save_model(self, model_params):
+        #save model params as json file
+        folder = model_params['folder']
+        epoch = model_params['epochs']
+        if not os.path.exists(folder + '/model'):
+            os.makedirs(folder + '/model')
+
+        # save model
+        #load model params
+        optim = model_params['optim']
+        loss = model_params['loss']
+        epochs = model_params['epochs']
+        folder = model_params['folder']
+        path = folder + f'/model/save_model_ckpt_{epoch}.pth'
         
-    
+        #save rnn model
+        torch.save(self.state_dict(), path)
+        
+        loader.save_model_params(model_params)
+        
+    def load_model(self, model_params, path):
+        self.load_state_dict(torch.load(path))  
     class Visualiser:
 
         """

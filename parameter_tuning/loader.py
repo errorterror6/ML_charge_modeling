@@ -396,23 +396,7 @@ def check_environment():
     import ffmpeg
 
 def save_model(model_params):
-    #save model params as json file
-    folder = model_params['folder']
-    epoch = model_params['epochs']
-    if not os.path.exists(folder + '/model'):
-        os.makedirs(folder + '/model')
-
-    # save model
-    #load model params
-    func = model_params['func']
-    rec = model_params['rec']
-    dec = model_params['dec']
-    optim = model_params['optim']
-    loss = model_params['loss']
-    epochs = model_params['epochs']
-    folder = model_params['folder']
-    path = folder + f'/model/save_model_ckpt_{epoch}.pth'
-    shjnn.save_state(path, func, rec, dec, optim, loss, epochs)
+    parameters.model.save_model(model_params)
 
 def load_model(model_params):
     #load model params from json file. Overwrite model params.
