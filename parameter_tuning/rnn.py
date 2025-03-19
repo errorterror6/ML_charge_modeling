@@ -177,28 +177,15 @@ class RNN(nn.Module):
         # Split dataset into training and validation sets
         # TODO: this is technically a good idea but the dataset produces 9 mini-batches in total which makes this split not viable.
         # good to look into this in the future
-        # train_size = int(0.9 * len(data))  # 90% training, 10% validation
-        # val_size = len(data) - train_size
-        # train_dataset, val_dataset = torch.utils.data.random_split(data, [train_size, val_size])
+        train_size = int(0.8 * len(data))  # 90% training, 10% validation
+        val_size = len(data) - train_size
+        train_dataset, val_dataset = torch.utils.data.random_split(data, [train_size, val_size])
         
-        #TODO: temporary code addressing the above
-        train_dataset = data
-
         # Initialize data loaders
         
         train_loader = DataLoader(train_dataset, batch_size=model_params['n_batch'], shuffle=True, drop_last=True)
-        # TODO: begin temporary code. Extract the first batch
-        first_batch = next(iter(train_loader))
-        inputs, targets = first_batch
-
-        # Create val_loader
-        val_dataset = TensorDataset(inputs, targets)
         
-        #evaluation is performed across the whole set. one batch only.
-        val_loader = DataLoader(val_dataset, batch_size=len(data), shuffle=False)
-        
-        #TODO: part of the above TODO's. above line of code is temporary fix.
-        # val_loader = shjnn.DataLoader(val_dataset, batch_size=model_params['n_batch'], shuffle=False, drop_last=True)
+        val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False)
 
         # Initialize loss history
         val_loss_history = []

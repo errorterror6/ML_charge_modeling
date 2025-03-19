@@ -133,9 +133,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # Create subplot
         ax = fig.add_subplot(1, 1, 1)
 
-        # Create epoch numbers for x-axis - scale by 10 to fix epoch display
-        # The issue is that the loss is recorded every 0.1 epochs (10 times per epoch)
-        epochs = np.arange(1, len(loss_history) + 1) * 10
+        epochs = np.arange(1, len(loss_history) + 1)
         
         # Plot raw loss values
         ax.plot(epochs, loss_history, '-', label='Raw loss', alpha=0.3, color='blue')
