@@ -83,9 +83,24 @@ class RNN(nn.Module):
         #   - Use obs[:, t, :] as input.
         #   - Predict obs[:, t+1, :].
         it = 0
+        for i in range(seq_len):
+            if torch.isnan(obs[:, i, :]).any():
+                i += 1
+            else:
+                out = obs[:, i, :].unsqueeze(1)
+                break
+            if i == seq_len - 1:
+                print("rnn: forward_step: non-valid dataset detected. no instance of non-nan data detected in dataset. Exiting.")
+                exit(1)
+            
         for t in range(seq_len - 1):
             # RNN is given information about the whole sequence.
             current_input = obs[:, t, :].unsqueeze(1)
+            
+            #check if current_input is nan
+            if torch.isnan(current_input).any():
+                print("debug: rnn: forward_step: current_input is nan")
+                current_input = out
 
             # Forward pass for a single time step
             try:
