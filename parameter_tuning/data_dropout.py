@@ -24,6 +24,18 @@ def create_missing_data(data, random_rate=0, drop_array=None):
         return missing_data
     return missing_data
 
+def remove_nan(data):
+    """
+    Remove NaN values from the input data.
+    
+    Args:
+        data (np.ndarray): Input data.
+    
+    Returns:
+        np.ndarray: Data with NaN values removed.
+    """
+    return data[~np.isnan(data)]
+
 if __name__ == '__main__':
     data = [0,1,2,3,4,5,6,7,8,9,10]
     missing_data_index = [1, 5, 9]
