@@ -2,6 +2,7 @@ import parameters
 import loader
 import rnn
 import b_vae
+import lstm
 import torch
 
 import sys
@@ -52,6 +53,14 @@ def init_RNN(model_params=parameters.model_params):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_params['device'] = device
     return rnn.RNN(model_params)
+
+def init_LSTM(model_params=parameters.model_params):
+    epochs = 0
+    model_params['epochs'] = epochs
+    #check if cuda is available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model_params['device'] = device
+    return lstm.LSTM(model_params)
 
 def init_B_VAE(model_params=parameters.model_params):
     epochs=0

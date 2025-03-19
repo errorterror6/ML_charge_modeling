@@ -24,8 +24,10 @@ class RNN(nn.Module):
         self.model_params = m
         self.criterion = nn.MSELoss()
         #input : (y_t, time_t) to hidden
-        #TODO: ensure that the starting params of the RNN are the same run to run.
-        self.rnn = nn.RNN(
+        #NOTE: currently the RNN takes in 2 features, the charge and the time, but only the charge is used for prediction and time is
+        # simply discarded. This was built this way to allow future expandability to incorporate time - to do this, go to 
+        # forward_step and change the loss function to include the time feature.
+        self.temporal = nn.RNN(
             input_size=2,
             hidden_size=m['rnn_nhidden'],
             #use relu + clip_gradient if poor results with tanh
@@ -52,7 +54,7 @@ class RNN(nn.Module):
         
       
     def forward(self, data, hidden):
-        _, h_t = self.rnn(data, hidden)
+        _, h_t = self.temporal(data, hidden)
         h2 = self.h2h1(h_t)
         output = self.h2o(h2)
 
@@ -94,10 +96,10 @@ class RNN(nn.Module):
                 exit(1)
 
             # The target for this time step is the next observation in the sequence.
+            #NOTE: unslice the last component of the obs tensor to get both charge and time features.
             target = obs[:, t + 1, 0:1].unsqueeze(1)
             # Accumulate the loss (using your chosen loss function, e.g., MSELoss)
-            # TODO: isse that the loss fn is shape [1,16,2] for both which means its comparing both time and traj differences.
-            # print("out shape: ", out.shape)
+            # NOTE: also unslice the last component of the out tensor to get both charge and time features.
             loss = self.loss_fn(out[:,:,0:1], target.permute(1, 0, 2))
             losses.append(loss)
             predictions.append(out)
@@ -126,7 +128,7 @@ class RNN(nn.Module):
         Returns:
             float: The average loss over the sequence.
         """
-        self.rnn.train()
+        self.train()
         
         # Combine trajectory and time features.
         # Resulting obs shape: [batch, seq_len, total_features]
@@ -141,7 +143,7 @@ class RNN(nn.Module):
         """
         #TODO: change so that eval step only runs one of the batches...
        
-        self.rnn.eval()
+        self.temporal.eval()
         # Combine trajectory and time features.
         # Resulting obs shape: [batch, seq_len, total_features]
         obs = torch.cat((traj, time), dim=-1)
@@ -155,7 +157,7 @@ class RNN(nn.Module):
 
         # Return the average loss over all time steps
     
-    def train(self, n_epochs, model_params=parameters.model_params, dataset=parameters.dataset, records=parameters.records):
+    def train_nepochs(self, n_epochs, model_params=parameters.model_params, dataset=parameters.dataset, records=parameters.records):
         """
         Runs the training loop for n_epochs times where n_epochs is the "epochs per train".
 
@@ -370,7 +372,7 @@ class RNN(nn.Module):
             rnn_instance : RNN
                 The parent RNN model instance
             """
-            self.RNN = rnn_instance
+            self.temporal = rnn_instance
 
         def plot_training_loss(self, model_params=parameters.model_params, save=True, split=False, plot_total=True, plot_MSE=False, plot_KL=False):
             visualisation.plot_training_loss(model_params, save=save, split=False, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL, scale='log')
@@ -434,7 +436,7 @@ class RNN(nn.Module):
                 # perform inference step for prediciton
 
 
-                loss, prediction, obs = self.RNN.eval_step(datas[i, :, 0].unsqueeze(1), datas[i, :, 1].unsqueeze(1), batch_input=False)
+                loss, prediction, obs = self.temporal.eval_step(datas[i, :, 0].unsqueeze(1), datas[i, :, 1].unsqueeze(1), batch_input=False)
                 loss_list.append(loss)
                 pred_x = torch.cat(prediction, dim=1)
                 pred_x = pred_x[:, :, 0].unsqueeze(2)

@@ -19,7 +19,7 @@ if __name__ == '__main__':
     if len(parameters.model_params['name']) == 0:
         parameters.model_params['name'] = 'default'
     parameters.model_params['desc'] = input("Enter a description: ")
-    parameters.trainer = input("Enter the trainer to use (B-VAE, RNN): ")
+    parameters.trainer = input("Enter the trainer to use (B-VAE, RNN, LSTM): ")
     print("Logs: Main: Using trainer: ", parameters.trainer)
 
 
@@ -34,6 +34,9 @@ if __name__ == '__main__':
             parameters.model = init.init_B_VAE(parameters.model_params)
         case 'RNN':
             parameters.model = init.init_RNN(parameters.model_params)
+        case 'LSTM':
+            parameters.model = init.init_LSTM(parameters.model_params)
+        
     training.train(parameters.model_params, parameters.dataset)
 
 

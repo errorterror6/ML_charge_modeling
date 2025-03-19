@@ -112,9 +112,55 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
 
     # run training for epochs, return loss
     rnn = parameters.model
-    _epochs, _loss, _, _ = rnn.train(n_epochs, model_params=model_params, dataset=dataset)
+    _epochs, _loss, _, _ = rnn.train_nepochs(n_epochs, model_params=model_params, dataset=dataset)
 
     print('Logs: training: RNN_training_loop: Try')
+    # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
+
+    # update loss, epochs
+    model_params['epochs'] += _epochs
+    # model_params['loss'].append(np.average(_loss))
+    print(f'debug: loss size: {len(model_params['loss'])}')
+
+    return model_params
+
+def LSTM_training_loop(n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
+    ''' run training loop with save 
+        args: n_epochs, model_params, dataset
+        return: model_params (updated)
+    '''    
+
+    # beta for beta latent dissentanglement
+    #beta = 4.
+    # beta = .01
+
+    # update learning rate
+    # lr = 1e-3
+
+    lr = model_params['lr']
+    n_batch = model_params['n_batch']
+    beta = model_params['beta']
+    optim = model_params['optim']
+
+
+    for g in optim.param_groups:
+        g['lr'] = lr
+
+    # get data
+    trajs = dataset['trajs']
+    times = dataset['times']
+
+    # get model
+    func = model_params['func']
+    rec = model_params['rec']
+    dec = model_params['dec']
+    device = model_params['device']
+
+    # run training for epochs, return loss
+    lstm = parameters.model
+    _epochs, _loss, _, _ = lstm.train_nepochs(n_epochs, model_params=model_params, dataset=dataset)
+
+    print('Logs: training: lstm_training_loop: Try')
     # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
 
     # update loss, epochs
@@ -190,6 +236,8 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
                 
             case 'RNN':
                 RNN_training_loop(train_epochs, model_params, dataset)
+            case 'LSTM':   
+                LSTM_training_loop(train_epochs, model_params, dataset)
                 
                 # print("Logs: training: train: debug: loss: ", parameters.model_params['loss'])
             case _:
