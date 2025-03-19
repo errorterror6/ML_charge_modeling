@@ -94,10 +94,11 @@ class RNN(nn.Module):
                 exit(1)
 
             # The target for this time step is the next observation in the sequence.
-            target = obs[:, t + 1, :].unsqueeze(1)
+            target = obs[:, t + 1, 0:1].unsqueeze(1)
             # Accumulate the loss (using your chosen loss function, e.g., MSELoss)
             # TODO: isse that the loss fn is shape [1,16,2] for both which means its comparing both time and traj differences.
-            loss = self.loss_fn(out, target.permute(1, 0, 2))
+            # print("out shape: ", out.shape)
+            loss = self.loss_fn(out[:,:,0:1], target.permute(1, 0, 2))
             losses.append(loss)
             predictions.append(out)
 
