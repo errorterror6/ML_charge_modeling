@@ -177,13 +177,14 @@ class RNN(nn.Module):
         # Split dataset into training and validation sets
         # TODO: this is technically a good idea but the dataset produces 9 mini-batches in total which makes this split not viable.
         # good to look into this in the future
-        train_size = int(0.8 * len(data))  # 90% training, 10% validation
-        val_size = len(data) - train_size
+        train_size = int(0.8 * len(data))  # NOTE: change to 0.8 for 80/20 split
+        
+        val_size = int(0.2 * len(data))
         train_dataset, val_dataset = torch.utils.data.random_split(data, [train_size, val_size])
         
         # Initialize data loaders
         
-        train_loader = DataLoader(train_dataset, batch_size=model_params['n_batch'], shuffle=True, drop_last=True)
+        train_loader = DataLoader(data, batch_size=model_params['n_batch'], shuffle=True, drop_last=True)
         
         val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False)
 
