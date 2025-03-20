@@ -55,12 +55,12 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
     # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
     
     
-    parameters.model.eval(model_params, dataset)
+    eval_loss = parameters.model.eval(model_params, dataset)
 
     # update loss, epochs
     model_params['epochs'] += _epochs
     print(f'debug: printing out _epochs: {_epochs}')
-    model_params['loss'].append(np.average(_loss))
+    model_params['loss'].append(np.average(eval_loss))
     print(f'debug: printing out mse loss: {np.average(_MSE_loss)}')
     model_params['MSE_loss'].append(np.average(_MSE_loss))
     model_params['KL_loss'].append(np.average(_KL_loss))
@@ -247,7 +247,7 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
         # loader.save_random_fit(model_params, dataset, random_samples=False)
         # loader.save_model(model_params)
         parameters.model.visualiser.display_random_fit(show=False, random_samples=model_params['random'])
-    parameters.model.visualiser.plot_training_loss(model_params, save=True, split=True)
+    parameters.model.visualiser.plot_training_loss(model_params, save=True, split=False)
     # loader.save_model_params(model_params)
     parameters.model.save_model(model_params)
     # parameters.model.Visualiser.compile_learning_gif(model_params, display=False)

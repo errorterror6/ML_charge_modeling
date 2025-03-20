@@ -80,7 +80,7 @@ class B_VAE:
         def __init__(self, b_vae_instance):
             pass
 
-        def plot_training_loss(self, model_params=parameters.model_params, save=False, split=False, plot_total=False, plot_MSE=True, plot_KL=True):
+        def plot_training_loss(self, model_params=parameters.model_params, save=False, split=False, plot_total=True, plot_MSE=True, plot_KL=True):
             visualisation.plot_training_loss(model_params, save=save, split=split, plot_total=plot_total, plot_MSE=plot_MSE, plot_KL=plot_KL)
 
         def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=False, save=True, random_samples=True):

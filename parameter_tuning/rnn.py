@@ -187,7 +187,7 @@ class RNN(nn.Module):
         runs the RNN in evaluation mode.
         returns: loss, prediction, target
         """
-        print(f"debug: rnn: eval_step: entered")
+        # print(f"debug: rnn: eval_step: entered")
         #TODO: change so that eval step only runs one of the batches...
        
         self.temporal.eval()

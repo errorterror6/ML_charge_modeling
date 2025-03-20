@@ -82,7 +82,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         # Plot total loss with blue color on a secondary y-axis
         if plot_total:
             total_ax = main_ax.twinx()
-            total_ax.plot(epochs, total_loss, '-', label='Total loss', alpha=0.3, color='blue')
+            total_ax.plot(epochs, total_loss, '-', label='eval loss', alpha=0.3, color='blue')
             total_ax.set_yscale('log')
             total_ax.set_ylabel('Total Loss')
 
