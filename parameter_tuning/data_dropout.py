@@ -55,15 +55,61 @@ def verify_missing_data():
 
 def remove_nan(data):
     """
-    Remove NaN values from the input data.
+    Truncate NaN values from the dataset while preserving memory structure.
     
     Args:
-        data (np.ndarray): Input data.
+        data (np.ndarray or torch.Tensor): Input data, could be 2D or 3D tensor.
     
     Returns:
-        np.ndarray: Data with NaN values removed.
+        np.ndarray or torch.Tensor: Data with NaN values removed.
     """
-    return data[~np.isnan(data)]
+    if isinstance(data, torch.Tensor):
+        # Check tensor dimensionality
+        if data.dim() == 2:
+            # For 2D tensor [batch, features]
+            mask = ~torch.isnan(data).any(dim=1)
+            return data[mask]
+        elif data.dim() == 3:
+            # For 3D tensor [batch, seq_len, features]
+            # We need to create masks for each sequence item
+            mask = ~torch.isnan(data).any(dim=2)  # Shape: [batch, seq_len]
+            
+            # For each batch item, keep only valid timesteps
+            filtered_data_list = []
+            
+            for i in range(data.shape[0]):  # For each trajectory
+                item_mask = mask[i]  # Get mask for this trajectory
+                if item_mask.any():  # If there are any valid timesteps
+                    filtered_data_list.append(data[i, item_mask])
+            
+            if filtered_data_list:
+                # Stack the valid data back together
+                return torch.stack(filtered_data_list)
+            else:
+                # If no valid data, return empty tensor with correct feature dimension
+                return torch.zeros((0, data.shape[2]), device=data.device)
+        else:
+            raise ValueError(f"Unsupported tensor dimension: {data.dim()}")
+    else:
+        # For numpy arrays
+        if data.ndim == 2:
+            mask = ~np.isnan(data).any(axis=1)
+            return data[mask]
+        elif data.ndim == 3:
+            mask = ~np.isnan(data).any(axis=2)
+            
+            filtered_data_list = []
+            for i in range(data.shape[0]):
+                item_mask = mask[i]
+                if item_mask.any():
+                    filtered_data_list.append(data[i, item_mask])
+            
+            if filtered_data_list:
+                return np.stack(filtered_data_list)
+            else:
+                return np.zeros((0, data.shape[2]))
+        else:
+            raise ValueError(f"Unsupported array dimension: {data.ndim}")
 
 def modify_data():
     """
@@ -77,8 +123,46 @@ def modify_data():
     new_times = create_missing_data(times, drop_array=parameters.dataset['missing_idx'])
 
     if parameters.trainer == 'B-VAE':
-        parameters.dataset['trajs'] = torch.Tensor(remove_nan(new_trajs)).to(parameters.device)
-        parameters.dataset['times'] = torch.Tensor(remove_nan(new_times)).to(parameters.device)
+        # Use our improved remove_nan function which handles correspondence between datasets
+        print("Removing NaN values from trajectories...")
+        filtered_trajs = remove_nan(new_trajs)
+        
+        # Apply the same masking logic to times
+        print("Removing corresponding time points...")
+        # We need to identify NaN values in trajs to filter both trajs and times
+        if isinstance(new_trajs, torch.Tensor):
+            mask = ~torch.isnan(new_trajs).any(dim=2)  # Shape: [batch, seq_len]
+            
+            filtered_times_list = []
+            for i in range(new_trajs.shape[0]):
+                traj_mask = mask[i]
+                if traj_mask.any():
+                    filtered_times_list.append(new_times[i, traj_mask])
+            
+            if filtered_times_list:
+                filtered_times = torch.stack(filtered_times_list)
+            else:
+                print("Warning: All trajectory points contain NaN values")
+                filtered_times = new_times  # Fallback
+        else:
+            mask = ~np.isnan(new_trajs).any(axis=2)
+            
+            filtered_times_list = []
+            for i in range(new_trajs.shape[0]):
+                traj_mask = mask[i]
+                if traj_mask.any():
+                    filtered_times_list.append(new_times[i, traj_mask])
+            
+            if filtered_times_list:
+                filtered_times = np.stack(filtered_times_list)
+            else:
+                print("Warning: All trajectory points contain NaN values")
+                filtered_times = new_times  # Fallback
+                
+        # Update the dataset
+        parameters.dataset['trajs'] = torch.Tensor(filtered_trajs).to(parameters.device)
+        parameters.dataset['times'] = torch.Tensor(filtered_times).to(parameters.device)
+        print(f"After NaN removal - trajs shape: {parameters.dataset['trajs'].shape}, times shape: {parameters.dataset['times'].shape}")
     elif parameters.trainer == 'RNN' or parameters.trainer == 'LSTM':
         parameters.dataset['trajs'] = torch.Tensor(new_trajs).to(parameters.device)
         parameters.dataset['times'] = torch.Tensor(new_times).to(parameters.device)

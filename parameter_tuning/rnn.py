@@ -223,7 +223,7 @@ class RNN(nn.Module):
         """
         # Initialize dataset
         data = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
-        print(f"debug: rnn: train: dataset shape: {len(data)}")
+        # print(f"debug: rnn: train: dataset shape: {len(data)}")
         # Split dataset into training and validation sets
         # TODO: this is technically a good idea but the dataset produces 9 mini-batches in total which makes this split not viable.
         # good to look into this in the future
@@ -431,7 +431,7 @@ class RNN(nn.Module):
             # get data
             trajs = dataset['trajs']
             times = dataset['times']
-            print(f"debug: rnn: visualiser: display_random_fit: trajs shape {trajs.shape}, times shape {times.shape}")
+            # print(f"debug: rnn: visualiser: display_random_fit: trajs shape {trajs.shape}, times shape {times.shape}")
             y = dataset['y']
 
             # get model
@@ -445,7 +445,7 @@ class RNN(nn.Module):
             ax = [ [ fig.add_subplot(j,1,i) for i in range(1,j+1) ] for j in [k] ][0]
             #concantenate trajs and times
             datas = torch.cat((trajs, times), dim=-1)
-            print(f"debug: rnn: visualiser: display: datas shape: {datas.shape}")
+            # print(f"debug: rnn: visualiser: display: datas shape: {datas.shape}")
             # select data
             sample_indices = list(range(len(datas)))
             if random_samples:

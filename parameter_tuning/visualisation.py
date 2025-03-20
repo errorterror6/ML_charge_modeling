@@ -140,8 +140,8 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
 
         # Apply Savitzky-Golay filter to smooth the loss curve
         # Window size 13 (must be odd), polynomial order 3
-        smoothed_loss = np.abs(savgol_filter(loss_history, 13, 3))
-        ax.plot(epochs, smoothed_loss, '-', label='Smoothed loss', alpha=0.8, color='blue')
+        # smoothed_loss = np.abs(savgol_filter(loss_history, 3, 3))
+        # ax.plot(epochs, smoothed_loss, '-', label='Smoothed loss', alpha=0.8, color='blue')
 
         # Set y-axis scale (log or linear)
         if scale == 'linear':
