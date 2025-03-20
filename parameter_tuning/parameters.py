@@ -19,7 +19,10 @@ dataset = {
     'trajs': None,
     'times': None,
     'y': None,   # intensity, voltage, delay, thickness.
-    'cut_zero': True # whether to delete all data before t=0
+    'cut_zero': True, # whether to delete all data before t=0
+    
+    # set indices of missing data here. [1, 70].
+    'missing_idx': [4, 5, 34, 68, 69],
     
 }
 
@@ -28,7 +31,7 @@ dataset_PV = {
     'elec_df': r'C:\Users\z5183876\Documents\GitHub\PV-syst-data\Bomen\data_from_server\2021_elec_df.pkl'
     }
 
-#choose between options 'B-VAE', 'RNN',
+#choose between options 'B-VAE', 'RNN', 'LSTM'
 trainer = 'B-VAE'
 model = None
 rnn = None

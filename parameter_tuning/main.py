@@ -19,15 +19,25 @@ if __name__ == '__main__':
     if len(parameters.model_params['name']) == 0:
         parameters.model_params['name'] = 'default'
     parameters.model_params['desc'] = input("Enter a description: ")
+    drop_data = input("run with missing data? (y/n): ")
     parameters.trainer = input("Enter the trainer to use (B-VAE, RNN, LSTM): ")
+    
     print("Logs: Main: Using trainer: ", parameters.trainer)
+    
 
 
     #begin training loop
     
-    time_start = time.time()
     
-    init.load_data()
+    
+    if drop_data == 'y':
+        drop_data = True
+    else:
+        drop_data = False
+    init.load_data(drop_data=drop_data)
+    
+    
+    
     init.init_shjnn(parameters.model_params)
     match parameters.trainer:
         case 'B-VAE':       
@@ -36,6 +46,11 @@ if __name__ == '__main__':
             parameters.model = init.init_RNN(parameters.model_params)
         case 'LSTM':
             parameters.model = init.init_LSTM(parameters.model_params)
+        case _:
+            print("Logs: Main: Invalid trainer. Exiting.")
+            exit(1)
+            
+    time_start = time.time()    
         
     training.train(parameters.model_params, parameters.dataset)
 

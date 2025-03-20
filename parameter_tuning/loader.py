@@ -278,9 +278,9 @@ def load_data(data_out=parameters.dataset):
 
     print("Logs: loader: load_data, length of trajs, shape of trajs[0], shape of times[0]: ", len(d), d[0].shape, ts[0].shape)
 
-    data_out['trajs'] = trajs
-    data_out['times'] = times
-    data_out['y'] = y
+    parameters.dataset['trajs'] = trajs
+    parameters.dataset['times'] = times
+    parameters.dataset['y'] = y
 
 def save_random_fit(model_params=parameters.model_params, dataset=parameters.dataset, random_samples=True):
     visualisation.display_random_fit(model_params, dataset, show=False, save=True, random_samples=random_samples)

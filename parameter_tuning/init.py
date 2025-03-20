@@ -5,6 +5,8 @@ import b_vae
 import lstm
 import torch
 
+import data_dropout
+
 import sys
 sys.path.append('../libs/')
 import shjnn
@@ -68,11 +70,18 @@ def init_B_VAE(model_params=parameters.model_params):
 
 
 
-def load_data():
+def load_data(drop_data=False):
+    
     print("Logs: Init: Initialising data from dataloader")
     loader.load_data()
     trajs = parameters.dataset['trajs']
     obs_dim = trajs[0].size()[1]
     parameters.model_params['obs_dim'] = obs_dim
     print("Logs: Init: Finished initialising data from dataloader")
+    
+    if drop_data:
+        data_dropout.modify_data()
+        print("Logs: Init: Modified data to have missing data.")
+    
+
 
