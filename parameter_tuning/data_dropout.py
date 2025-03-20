@@ -38,6 +38,19 @@ def create_missing_data(data, random_rate=0, drop_array=None):
     print(f"debug: data_new_shape: {data_new.shape}")
         
     return data_new
+
+def verify_missing_data():
+    count = 0;
+    for entry in parameters.dataset['trajs']:
+        for step in entry:
+            if torch.isnan(step).any():
+                count += 1
+
+    for entry in parameters.dataset['times']:
+        for step in entry:
+            if torch.isnan(step).any():
+                count += 1
+    print("Logs: data_dropout: Number of missing data entries: ", count)
     
 
 def remove_nan(data):

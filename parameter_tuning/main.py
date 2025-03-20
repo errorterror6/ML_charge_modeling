@@ -3,6 +3,7 @@ import loader
 import parameters
 import training
 import init
+import data_dropout
 
 import sys
 import time
@@ -36,7 +37,8 @@ if __name__ == '__main__':
         drop_data = False
     init.load_data(drop_data=drop_data)
     
-    
+    # data_dropout.verify_missing_data()
+    # exit(0)
     
     init.init_shjnn(parameters.model_params)
     match parameters.trainer:

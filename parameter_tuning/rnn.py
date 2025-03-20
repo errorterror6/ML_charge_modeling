@@ -50,7 +50,7 @@ class RNN(nn.Module):
 
     def init_hidden(self, batch_size):
         d = 1
-        return torch.zeros(d, batch_size, self.model_params['nhidden'])
+        return torch.zeros(d, batch_size, self.model_params['nhidden']).to(self.model_params['device'])
         
       
     def forward(self, data, hidden):
@@ -67,7 +67,7 @@ class RNN(nn.Module):
 
     def forward_step(self, obs, train=True):
         #obs is of shape [batch, seq_len, total_features]
-        #ypically 16, 70, 2
+        #typically 16, 70, 2
         try:
             hidden = self.init_hidden(obs.size(0))  # obs.size(0) is the batch size
         except Exception as e:
@@ -77,56 +77,87 @@ class RNN(nn.Module):
         seq_len = obs.size(1)
         losses = []  # List to accumulate losses for each time step
         predictions = []  # (Optional) store predictions if needed
-
-        # Loop over time steps using teacher forcing.
-        # For t = 0 to seq_len - 2:
-        #   - Use obs[:, t, :] as input.
-        #   - Predict obs[:, t+1, :].
-        it = 0
+        
+        # Create a placeholder for previous output with correct dimensions
+        # Will be overwritten with actual values during processing
+        prev_output = torch.zeros(obs.size(0), 1, obs.size(2), device=obs.device)
+        
+        # Find first non-NaN data point to initialize prev_output
+        found_valid_data = False
         for i in range(seq_len):
-            if torch.isnan(obs[:, i, :]).any():
-                i += 1
-            else:
-                out = obs[:, i, :].unsqueeze(1)
+            if not torch.isnan(obs[:, i, :]).any():
+                prev_output = obs[:, i, :].unsqueeze(1)  # shape: [batch, 1, features]
+                found_valid_data = True
                 break
-            if i == seq_len - 1:
-                print("rnn: forward_step: non-valid dataset detected. no instance of non-nan data detected in dataset. Exiting.")
-                exit(1)
-            
+                
+        if not found_valid_data:
+            print("rnn: forward_step: non-valid dataset detected. no instance of non-nan data detected in dataset. Exiting.")
+            exit(1)
+        
+        # Loop over time steps using teacher forcing
         for t in range(seq_len - 1):
-            # RNN is given information about the whole sequence.
-            current_input = obs[:, t, :].unsqueeze(1)
+            # RNN is given information about the whole sequence
+            current_input = obs[:, t, :].unsqueeze(1)  # shape: [batch, 1, features]
             
-            #check if current_input is nan
+            # Check if current_input contains NaN values
             if torch.isnan(current_input).any():
-                print("debug: rnn: forward_step: current_input is nan")
-                current_input = out
-
+                # print(f"manipulating inputs at time {t}")
+                # Use the previous output instead, ensuring shape consistency
+                current_input = prev_output  # Already has shape [batch, 1, features]
+            
             # Forward pass for a single time step
             try:
+                # print(f"debug: rnn: forward_step: seq: {t} current_input shape: {current_input.shape}")
                 out, hidden = self.forward(current_input, hidden)
+                
+                # Check if hidden state has NaNs
+                if torch.isnan(hidden).any():
+                    # print(f"rnn: forward_step: NaN detected in hidden state at step {t}. Resetting hidden state.")
+                    hidden = self.init_hidden(obs.size(0))
+                
+                # print(f"debug: rnn: forward_step: seq: {t} out shape: {out.shape}, sample: {out[0]}")
+                
+                # Save output for next missing data substitution
+                prev_output = current_input.clone()  # Save known good input
+                
+                if torch.isnan(out).any():
+                    print(f"rnn: forward_step: NaN detected in output at step {t}. Exiting.")
+                    exit(1)
                 # Expected out shape: [batch, 1, output_dim]
             except KeyboardInterrupt:
                 print("Training interrupted by user.")
                 exit(1)
 
             # The target for this time step is the next observation in the sequence.
-            #NOTE: unslice the last component of the obs tensor to get both charge and time features.
+            # NOTE: unslice the last component of the obs tensor to get both charge and time features.
             target = obs[:, t + 1, 0:1].unsqueeze(1)
+            
+            # Handle target with NaN values - skip loss calculation for this step
+            if torch.isnan(target).any():
+                # print(f"skipping loss calculation for step {t} due to NaN in target")
+                predictions.append(out)
+                continue
+                
             # Accumulate the loss (using your chosen loss function, e.g., MSELoss)
             # NOTE: also unslice the last component of the out tensor to get both charge and time features.
             loss = self.loss_fn(out[:,:,0:1], target.permute(1, 0, 2))
             losses.append(loss)
             predictions.append(out)
 
-        avg_loss = torch.stack(losses).mean()
-        if train:
-        # Backpropagation and optimizer step
-            self.optimizer.zero_grad()
-            avg_loss.backward()
-            self.optimizer.step()
-
-        return avg_loss.item(), predictions
+        # Only compute mean loss if we have any valid steps
+        if len(losses) > 0:
+            avg_loss = torch.stack(losses).mean()
+            
+            if train:
+                # Backpropagation and optimizer step
+                self.optimizer.zero_grad()
+                avg_loss.backward()
+                self.optimizer.step()
+                
+            return avg_loss.item(), predictions
+        else:
+            print("No valid steps found for loss calculation")
+            return 0.0, predictions
 
     def train_step(self, traj, time):
         """
@@ -156,6 +187,7 @@ class RNN(nn.Module):
         runs the RNN in evaluation mode.
         returns: loss, prediction, target
         """
+        print(f"debug: rnn: eval_step: entered")
         #TODO: change so that eval step only runs one of the batches...
        
         self.temporal.eval()

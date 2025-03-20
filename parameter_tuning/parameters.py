@@ -22,7 +22,7 @@ dataset = {
     'cut_zero': True, # whether to delete all data before t=0
     
     # set indices of missing data here. [1, 70].
-    'missing_idx': [4, 5, 34, 68, 69],
+    'missing_idx': [4, 14, 26, 34, 50, 60, 65],
     
 }
 
