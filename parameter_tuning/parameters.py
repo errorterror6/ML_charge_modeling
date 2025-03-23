@@ -23,6 +23,8 @@ dataset = {
     
     # set indices of missing data here. [1, 70].
     'missing_idx': [4, 14, 26, 34, 50, 60, 65],
+    'drop_number': 5,
+    'use_array': False,
     
 }
 
