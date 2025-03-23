@@ -121,7 +121,7 @@ def make_train_step(dynamics_func, recognition_network, decoder, optimizer, devi
         optimizer.step()
         
         # Return loss components
-        return loss.item(), torch.mean(log_px).detach().cpu().numpy(), torch.mean(kl_divergence).detach().cpu().numpy()
+        return loss.item(), torch.mean(log_px).detach().numpy(), torch.mean(kl_divergence).detach().numpy()
     
     # Return the training step function
     return train_step

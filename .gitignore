@@ -16,6 +16,11 @@ saves
 .wsl-venv/
 .wsl-venv/*
 
+/.venv-wsl
+/.venv-wsl/
+.venv-wsl/
+.venv-wsl/*
+
 /parameter_tuning/saves/
 /parameter_tuning/saves
 /parameter_tuning/saves/*

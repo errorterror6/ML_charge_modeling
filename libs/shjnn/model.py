@@ -43,8 +43,11 @@ def init_model(latent_dim, nhidden, rnn_nhidden, obs_dim, nbatch, lr, device=Non
     decoder = Decoder(latent_dim, obs_dim, nhidden)
 
     # Determine computing device (GPU or CPU)
-    if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"cuda is available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
 
     print(f'Initializing model on device: {device}')
 
