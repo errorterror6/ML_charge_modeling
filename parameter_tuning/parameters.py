@@ -44,8 +44,16 @@ model_params = {
     # hyper params
 
     #NOTE: reccomended to increase rnn_nhidden size.
-    'nhidden': 1024,
-    'rnn_nhidden': 1024,
+    'nhidden': 256,
+    
+    'rnn_linear1': 256,
+    'rnn_linear2': 128,
+    'rnn_linear3': 64,
+    'rnn_linear4': 128,
+    'rnn_linear5': 256,
+    
+    
+    'rnn_nhidden': 256,
     'obs_dim': 1,
 
     'latent_dim': 16,
@@ -64,7 +72,7 @@ model_params = {
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
     # NOTE: due a bug, total_epochs_Train must be greater than 14.
     'total_epochs_train': 600,
-    'epochs_per_train': 1,
+    'epochs_per_train': 2,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 0.00001,

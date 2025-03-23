@@ -38,9 +38,12 @@ class RNN(nn.Module):
             )
         # TODO: encode experimental variables into the hidden layer as init.
         # hidden to output (y_t+1, time_t+1)
-        self.h2h1 = nn.Linear(m['nhidden'], m['nhidden']).to(m['device'])
+        self.h2h1 = nn.Linear(m['rnn_linear1'], m['rnn_linear2']).to(m['device'])
+        self.h2h2 = nn.Linear(m['rnn_linear2'], m['rnn_linear3']).to(m['device'])
+        self.h2h3 = nn.Linear(m['rnn_linear3'], m['rnn_linear4']).to(m['device'])
+        self.h2h4 = nn.Linear(m['rnn_linear4'], m['rnn_linear5']).to(m['device'])
 
-        self.h2o = nn.Linear(m['nhidden'], 2).to(m['device'])
+        self.h2o = nn.Linear(m['rnn_linear5'], 2).to(m['device'])
         self.loss_fn = torch.nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.parameters(), lr=m['lr'])
 
@@ -49,12 +52,15 @@ class RNN(nn.Module):
 
     def init_hidden(self, batch_size):
         d = 1
-        return torch.zeros(d, batch_size, self.model_params['nhidden']).to(self.model_params['device'])
+        return torch.zeros(d, batch_size, self.model_params['rnn_nhidden']).to(self.model_params['device'])
         
     def forward(self, data, hidden):
         _, h_t = self.temporal(data, hidden)
         h2 = self.h2h1(h_t)
-        output = self.h2o(h2)
+        h3 = self.h2h2(h2)
+        h4 = self.h2h3(h3)
+        h5 = self.h2h4(h4)
+        output = self.h2o(h5)
 
         return output, h_t
 
