@@ -59,14 +59,18 @@ def create_missing_data(data, times, random_drops=0, drop_array=None):
     for idx, traj in enumerate(data):
         # print("debug: traj_shape: ", traj.shape)
         
-        new_data, new_times = missing_data_single(traj.squeeze(), times[idx].squeeze(), random_drops=random_drops, drop_array=drop_array)
+        # Convert tensors to numpy for processing, ensuring they're detached from graph and on CPU first
+        traj_np = traj.detach().cpu().squeeze().numpy() if isinstance(traj, torch.Tensor) else traj.squeeze()
+        times_np = times[idx].detach().cpu().squeeze().numpy() if isinstance(times[idx], torch.Tensor) else times[idx].squeeze()
+        
+        new_data, new_times = missing_data_single(traj_np, times_np, random_drops=random_drops, drop_array=drop_array)
         data_new.append(torch.Tensor(new_data).unsqueeze(1).to(parameters.device))
         times_new.append(torch.Tensor(new_times).unsqueeze(1).to(parameters.device))
         # print("debug: after processing: ", data_new[-1].shape)
-    data_new = np.array(data_new)
-    data_new = torch.tensor(data_new).to(parameters.device)
-    times_new = np.array(times_new)
-    times_new = torch.tensor(times_new).to(parameters.device)
+    
+    # Convert lists to tensors directly without numpy intermediate step
+    data_new = torch.stack(data_new).to(parameters.device)
+    times_new = torch.stack(times_new).to(parameters.device)
     print(f"debug: data_new_shape: {data_new.shape}")
         
     return data_new, times_new
@@ -176,27 +180,39 @@ def modify_data():
                 print("Warning: All trajectory points contain NaN values")
                 filtered_times = new_times  # Fallback
         else:
-            mask = ~np.isnan(new_trajs).any(axis=2)
+            # Ensure we handle numpy arrays properly with detach and cpu if needed
+            if hasattr(new_trajs, 'detach'):
+                new_trajs_np = new_trajs.detach().cpu().numpy()
+            else:
+                new_trajs_np = new_trajs
+                
+            mask = ~np.isnan(new_trajs_np).any(axis=2)
             
             filtered_times_list = []
-            for i in range(new_trajs.shape[0]):
+            for i in range(new_trajs_np.shape[0]):
                 traj_mask = mask[i]
                 if traj_mask.any():
-                    filtered_times_list.append(new_times[i, traj_mask])
+                    if hasattr(new_times, 'detach'):
+                        filtered_times_list.append(new_times[i, traj_mask].detach().cpu())
+                    else:
+                        filtered_times_list.append(new_times[i, traj_mask])
             
             if filtered_times_list:
-                filtered_times = np.stack(filtered_times_list)
+                if all(isinstance(t, torch.Tensor) for t in filtered_times_list):
+                    filtered_times = torch.stack(filtered_times_list)
+                else:
+                    filtered_times = np.stack(filtered_times_list)
             else:
                 print("Warning: All trajectory points contain NaN values")
                 filtered_times = new_times  # Fallback
                 
         # Update the dataset
-        parameters.dataset['trajs'] = torch.Tensor(filtered_trajs).to(parameters.device)
-        parameters.dataset['times'] = torch.Tensor(filtered_times).to(parameters.device)
+        parameters.dataset['trajs'] = filtered_trajs.to(parameters.device) if isinstance(filtered_trajs, torch.Tensor) else torch.Tensor(filtered_trajs).to(parameters.device)
+        parameters.dataset['times'] = filtered_times.to(parameters.device) if isinstance(filtered_times, torch.Tensor) else torch.Tensor(filtered_times).to(parameters.device)
         print(f"After NaN removal - trajs shape: {parameters.dataset['trajs'].shape}, times shape: {parameters.dataset['times'].shape}")
     elif parameters.trainer == 'RNN' or parameters.trainer == 'LSTM':
-        parameters.dataset['trajs'] = torch.Tensor(new_trajs).to(parameters.device)
-        parameters.dataset['times'] = torch.Tensor(new_times).to(parameters.device)
+        parameters.dataset['trajs'] = new_trajs.to(parameters.device)
+        parameters.dataset['times'] = new_times.to(parameters.device)
     else:
         print("modification of data not available for this trainer: ", parameters.trainer)
         print("no modifications made.")

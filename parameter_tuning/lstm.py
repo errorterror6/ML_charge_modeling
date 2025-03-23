@@ -53,7 +53,7 @@ class LSTM(RNN):
         # Use the stored cell state or initialize if None
         if self.cell_state is None:
             batch_size = hidden.size(1)
-            self.cell_state = torch.zeros_like(hidden)
+            self.cell_state = torch.zeros_like(hidden).to(self.model_params['device'])
         
         # LSTM returns output and tuple of (h_n, c_n)
         _, (h_t, c_t) = self.temporal(data, (hidden, self.cell_state))

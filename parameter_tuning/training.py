@@ -59,9 +59,9 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
 
     # update loss, epochs
     model_params['epochs'] += _epochs
-    print(f'debug: printing out _epochs: {_epochs}')
+    # print(f'debug: printing out _epochs: {_epochs}')
     model_params['loss'].append(np.average(eval_loss))
-    print(f'debug: printing out mse loss: {np.average(_MSE_loss)}')
+    # print(f'debug: printing out mse loss: {np.average(_MSE_loss)}')
     model_params['MSE_loss'].append(np.average(_MSE_loss))
     model_params['KL_loss'].append(np.average(_KL_loss))
 

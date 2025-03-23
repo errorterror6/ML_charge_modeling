@@ -75,21 +75,21 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         
         # Plot MSE loss with red color on the primary y-axis
         if plot_MSE:
-            main_ax.plot(epochs, mse_loss, '-', label='MSE loss', alpha=0.3, color='red')
+            main_ax.plot(epochs, mse_loss.detach().cpu().numpy() if isinstance(mse_loss, torch.Tensor) else mse_loss, '-', label='MSE loss', alpha=0.3, color='red')
             main_ax.set_yscale('log')
             main_ax.set_ylabel('MSE Loss')
 
         # Plot total loss with blue color on a secondary y-axis
         if plot_total:
             total_ax = main_ax.twinx()
-            total_ax.plot(epochs, total_loss, '-', label='eval loss', alpha=0.3, color='blue')
+            total_ax.plot(epochs, total_loss.detach().cpu().numpy() if isinstance(total_loss, torch.Tensor) else total_loss, '-', label='eval loss', alpha=0.3, color='blue')
             total_ax.set_yscale('log')
             total_ax.set_ylabel('Total Loss')
 
         # Plot KL loss with green color on another secondary y-axis
         if plot_KL:
             kl_ax = main_ax.twinx()
-            kl_ax.plot(epochs, kl_loss, '-', label='KL loss', alpha=0.3, color='green')
+            kl_ax.plot(epochs, kl_loss.detach().cpu().numpy() if isinstance(kl_loss, torch.Tensor) else kl_loss, '-', label='KL loss', alpha=0.3, color='green')
             kl_ax.set_ylabel('KL Loss')
 
         # Optional: Plot smoothed losses using Savitzky-Golay filter
@@ -112,7 +112,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
             total_ax.legend(loc='upper center')
         
         # Add the final loss value to the title
-        plt.title(f'Final Loss: {round(total_loss[-1])}')
+        plt.title(f"Final Loss: {round(float(total_loss[-1].detach().cpu().numpy()) if isinstance(total_loss[-1], torch.Tensor) else round(total_loss[-1]))}")
         plt.tight_layout()
 
         if save:
@@ -136,7 +136,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         epochs = np.arange(1, len(loss_history) + 1)
         
         # Plot raw loss values
-        ax.plot(epochs, loss_history, '-', label='Raw loss', alpha=0.3, color='blue')
+        ax.plot(epochs, loss_history.detach().cpu().numpy() if isinstance(loss_history, torch.Tensor) else loss_history, '-', label='Raw loss', alpha=0.3, color='blue')
 
         # Apply Savitzky-Golay filter to smooth the loss curve
         # Window size 13 (must be odd), polynomial order 3
@@ -196,8 +196,8 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     time_points = dataset['times']
     metadata = dataset['y']  # Contains parameters like intensity, bias, delay
     
-    print(f"Debug: B-VAE: visualisation: display_random: trajectories shape: {trajectories.shape}")
-    print(f"Debug: B-VAE: visualisation: display_random: time_points shape: {time_points.shape}")
+    # print(f"Debug: B-VAE: visualisation: display_random: trajectories shape: {trajectories.shape}")
+    # print(f"Debug: B-VAE: visualisation: display_random: time_points shape: {time_points.shape}")
 
     # Extract model components
     model_func = model_params['func']
@@ -256,16 +256,16 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
         
         # TODO: how do i calculate the loss of the MSE here??
         
-        loss = torch.nn.MSELoss()(loss_x, traj_tensor)
+        loss = torch.nn.MSELoss()(loss_x.to(device), traj_tensor.to(device))
         loss_list.append(loss.item())
         # print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
 
         # Convert prediction to numpy for plotting
-        pred_x_np = pred_x.cpu().numpy()[0]
+        pred_x_np = pred_x.detach().cpu().numpy()[0]
         
         # Get original trajectory and time data
-        orig_traj = trajectories[traj_idx].cpu()
-        orig_time = time_points[traj_idx].cpu()
+        orig_traj = trajectories[traj_idx].detach().cpu()
+        orig_time = time_points[traj_idx].detach().cpu()
         # print(f"Debug: B-VAE: visualisation: display_random: orig_traj shape: {orig_traj.shape}")
         # Scaling factor for better visualization
         scale_factor = 50 * 1e2 / 1e3
@@ -286,7 +286,7 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
     plt.ylabel('Charge [mA]')
     plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}, loss: {:.1e}'.format(
-        epoch_num, model_params['lr'], model_params['beta'], np.mean(loss_list)))
+        epoch_num, model_params['lr'], model_params['beta'], np.mean([l for l in loss_list])))
 
     # Add legend
     plt.legend(loc='upper right', title='Intensity, Bias, Delay')
@@ -462,8 +462,8 @@ def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
         pred_x, pred_z = infer_step_encode(traj_tensor, time_tensor)
         
         # Store latent vectors
-        latent_vectors.append(pred_z[0, 0, ...].detach().numpy())  # First timestep only
-        all_latent_vectors.append(pred_z[0, ...].detach().numpy())  # All timesteps
+        latent_vectors.append(pred_z[0, 0, ...].detach().cpu().numpy())  # First timestep only
+        all_latent_vectors.append(pred_z[0, ...].detach().cpu().numpy())  # All timesteps
         
     # Convert lists to numpy arrays
     latent_vectors = np.stack(latent_vectors)
@@ -517,7 +517,7 @@ def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
         pred_x, pred_z = infer_step_decode(latent_tensor, time_tensor)
 
         # Convert prediction to numpy for plotting
-        pred_x_np = pred_x.cpu().numpy()[0]
+        pred_x_np = pred_x.detach().cpu().numpy()[0]
 
         # Plot the prediction for the first dimension
         label = 'z{}, {:.1f} + {:.1f}'.format(
