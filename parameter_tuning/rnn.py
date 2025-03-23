@@ -533,6 +533,8 @@ class RNN(nn.Module):
                 if not os.path.exists(folder):
                     os.makedirs(folder)
                 fig.savefig(f"{folder}/training_epoch_{epoch:04d}.png", dpi=300)
+                
+            plt.close('all')
 
         def compile_learning_gif(model_params=parameters.model_params, display=True):
             visualisation.compile_learning_gif(model_params, display=display)

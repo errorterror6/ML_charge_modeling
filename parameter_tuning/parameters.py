@@ -22,9 +22,9 @@ dataset = {
     'cut_zero': True, # whether to delete all data before t=0
     
     # set indices of missing data here. [1, 70].
-    'missing_idx': [4, 14, 26, 34, 50, 60, 65],
+    # if both options are populated, random drops will be prioritised with drop_number.
+    'missing_idx': None,
     'drop_number': 5,
-    'use_array': False,
     
 }
 
@@ -50,7 +50,7 @@ model_params = {
 
     'latent_dim': 16,
     #NOTE: reccomended to decrease this to 1e-5 or similar for training
-    'lr': 1e-3,
+    'lr':5e-4,
     'n_batch': 16,  #batch size
     'beta': 0.1,
 
@@ -63,7 +63,7 @@ model_params = {
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
     # NOTE: due a bug, total_epochs_Train must be greater than 14.
-    'total_epochs_train': 5,
+    'total_epochs_train': 15,
     'epochs_per_train': 1,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss

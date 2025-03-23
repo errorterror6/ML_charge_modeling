@@ -18,7 +18,7 @@ def pick_random_indices(n, start=0, end=68):
     
     # Use random.sample which guarantees unique selections
     generated = random.sample(range(start, end + 1), n)
-    print(f"debug: data_dropout: generated random indices: {generated}")
+    # print(f"debug: data_dropout: generated random indices: {generated}")
     return generated
 
 def missing_data_single(data, times, random_drops=0, drop_array=None):
@@ -38,7 +38,7 @@ def missing_data_single(data, times, random_drops=0, drop_array=None):
     missing_times = np.copy(times)
     missing_times = missing_times.astype(float)
     if random_drops != 0:
-        random.seed(DEFAULT_SEED)
+        # random.seed(DEFAULT_SEED)
         missing_data = np.copy(data)
         missing_indices = pick_random_indices(random_drops)
         missing_data[missing_indices] = np.nan
@@ -48,18 +48,20 @@ def missing_data_single(data, times, random_drops=0, drop_array=None):
         missing_data[drop_array] = np.nan
         missing_times[drop_array] = np.nan
         
-        return missing_data
+        return missing_data, missing_times
     return missing_data, missing_times
 
 def create_missing_data(data, times, random_drops=0, drop_array=None):
     data_new = []
     times_new = []
     # print(f"debug: data_shape: {data.shape}")
+    random.seed(DEFAULT_SEED)
     for idx, traj in enumerate(data):
         # print("debug: traj_shape: ", traj.shape)
-        new_data, new_times = missing_data_single(traj.squeeze(), times.squeeze(), random_drops=random_drops, drop_array=drop_array)
+        
+        new_data, new_times = missing_data_single(traj.squeeze(), times[idx].squeeze(), random_drops=random_drops, drop_array=drop_array)
         data_new.append(torch.Tensor(new_data).unsqueeze(1).to(parameters.device))
-        new_times.append(torch.Tensor(new_times).unsqueeze(1).to(parameters.device))
+        times_new.append(torch.Tensor(new_times).unsqueeze(1).to(parameters.device))
         # print("debug: after processing: ", data_new[-1].shape)
     data_new = np.array(data_new)
     data_new = torch.tensor(data_new).to(parameters.device)
@@ -149,7 +151,7 @@ def modify_data():
     trajs = parameters.dataset['trajs']
     times = parameters.dataset['times']
     
-    new_trajs, new_times = create_missing_data(trajs, times, drop_array=parameters.dataset['missing_idx'])
+    new_trajs, new_times = create_missing_data(trajs, times, random_drops=parameters.dataset['drop_number'], drop_array=parameters.dataset['missing_idx'])
 
     if parameters.trainer == 'B-VAE':
         # Use our improved remove_nan function which handles correspondence between datasets

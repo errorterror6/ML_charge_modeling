@@ -114,13 +114,11 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
     rnn = parameters.model
     _epochs, _loss, _, _ = rnn.train_nepochs(n_epochs, model_params=model_params, dataset=dataset)
 
-    print('Logs: training: RNN_training_loop: Try')
     # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
 
     # update loss, epochs
     model_params['epochs'] += _epochs
     # model_params['loss'].append(np.average(_loss))
-    print(f'debug: loss size: {len(model_params['loss'])}')
 
     return model_params
 
