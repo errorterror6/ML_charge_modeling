@@ -38,9 +38,9 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
     for g in optim.param_groups:
         g['lr'] = lr
 
-    # get data
-    trajs = dataset['trajs']
-    times = dataset['times']
+    # get training data with missing points
+    trajs = dataset['train_trajs']
+    times = dataset['train_times']
 
     # get model
     func = model_params['func']
@@ -55,6 +55,7 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
     # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
     
     
+    # Evaluate on original dataset (without missing points)
     eval_loss = parameters.model.eval(model_params, dataset)
 
     # update loss, epochs
@@ -100,9 +101,9 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
     for g in optim.param_groups:
         g['lr'] = lr
 
-    # get data
-    trajs = dataset['trajs']
-    times = dataset['times']
+    # get training data with missing points
+    trajs = dataset['train_trajs']
+    times = dataset['train_times']
 
     # get model
     func = model_params['func']
@@ -144,9 +145,9 @@ def LSTM_training_loop(n_epochs, model_params=parameters.model_params, dataset=p
     for g in optim.param_groups:
         g['lr'] = lr
 
-    # get data
-    trajs = dataset['trajs']
-    times = dataset['times']
+    # get training data with missing points
+    trajs = dataset['train_trajs']
+    times = dataset['train_times']
 
     # get model
     func = model_params['func']

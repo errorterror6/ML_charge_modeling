@@ -149,13 +149,18 @@ def remove_nan(data):
 
 def modify_data():
     """
-    Modifies parameters file dataset to instead run with missing data.
+    Modifies parameters file dataset to run with missing data.
+    The original dataset remains intact in 'trajs' and 'times', while
+    the training data with missing points is stored in 'train_trajs' and 'train_times'.
     """
     print("Logs: data_dropout: Modifying data to include missing data.")
-    trajs = parameters.dataset['trajs']
-    times = parameters.dataset['times']
+    # Create missing data from the training copies
+    train_trajs = parameters.dataset['train_trajs']
+    train_times = parameters.dataset['train_times']
     
-    new_trajs, new_times = create_missing_data(trajs, times, random_drops=parameters.dataset['drop_number'], drop_array=parameters.dataset['missing_idx'])
+    new_trajs, new_times = create_missing_data(train_trajs, train_times, 
+                                              random_drops=parameters.dataset['drop_number'], 
+                                              drop_array=parameters.dataset['missing_idx'])
 
     if parameters.trainer == 'B-VAE':
         # Use our improved remove_nan function which handles correspondence between datasets
@@ -206,16 +211,16 @@ def modify_data():
                 print("Warning: All trajectory points contain NaN values")
                 filtered_times = new_times  # Fallback
                 
-        # Update the dataset
-        parameters.dataset['trajs'] = filtered_trajs.to(parameters.device) if isinstance(filtered_trajs, torch.Tensor) else torch.Tensor(filtered_trajs).to(parameters.device)
-        parameters.dataset['times'] = filtered_times.to(parameters.device) if isinstance(filtered_times, torch.Tensor) else torch.Tensor(filtered_times).to(parameters.device)
-        print(f"After NaN removal - trajs shape: {parameters.dataset['trajs'].shape}, times shape: {parameters.dataset['times'].shape}")
+        # Update the training dataset
+        parameters.dataset['train_trajs'] = filtered_trajs.to(parameters.device) if isinstance(filtered_trajs, torch.Tensor) else torch.Tensor(filtered_trajs).to(parameters.device)
+        parameters.dataset['train_times'] = filtered_times.to(parameters.device) if isinstance(filtered_times, torch.Tensor) else torch.Tensor(filtered_times).to(parameters.device)
+        print(f"After NaN removal - train_trajs shape: {parameters.dataset['train_trajs'].shape}, train_times shape: {parameters.dataset['train_times'].shape}")
     elif parameters.trainer == 'RNN' or parameters.trainer == 'LSTM':
-        parameters.dataset['trajs'] = new_trajs.to(parameters.device)
-        parameters.dataset['times'] = new_times.to(parameters.device)
+        parameters.dataset['train_trajs'] = new_trajs.to(parameters.device)
+        parameters.dataset['train_times'] = new_times.to(parameters.device)
     else:
-        print("modification of data not available for this trainer: ", parameters.trainer)
-        print("no modifications made.")
+        print("Modification of data not available for this trainer: ", parameters.trainer)
+        print("No modifications made.")
         
 
 if __name__ == '__main__':

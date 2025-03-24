@@ -17,9 +17,9 @@ class B_VAE:
     def eval(self, model_params=parameters.model_params, dataset=parameters.dataset):
         #in visualisation.py, traj_tensor is of size 70 and if you feed the infer method with a time tensor that's unextrapolated (70),
         #it will return a tensor of size 70 which is the prediction and now you can MSE it with the original time_tensory.
-        # Extract data from dataset
-        trajectories = dataset['trajs']
-        time_points = dataset['times']
+        # Extract data from dataset - use original data for evaluation
+        trajectories = dataset['trajs']  # Original trajectories without missing data
+        time_points = dataset['times']   # Original time points without missing data
         metadata = dataset['y']  # Contains parameters like intensity, bias, delay
 
         # Extract model components

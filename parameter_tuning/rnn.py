@@ -38,6 +38,7 @@ class RNN(nn.Module):
             )
         # TODO: encode experimental variables into the hidden layer as init.
         # hidden to output (y_t+1, time_t+1)
+        self.h2h0 = nn.Linear(m['rnn_nhidden'], m['rnn_linear1']).to(m['device'])
         self.h2h1 = nn.Linear(m['rnn_linear1'], m['rnn_linear2']).to(m['device'])
         self.h2h2 = nn.Linear(m['rnn_linear2'], m['rnn_linear3']).to(m['device'])
         self.h2h3 = nn.Linear(m['rnn_linear3'], m['rnn_linear4']).to(m['device'])
@@ -56,7 +57,8 @@ class RNN(nn.Module):
         
     def forward(self, data, hidden):
         _, h_t = self.temporal(data, hidden)
-        h2 = self.h2h1(h_t)
+        h1 = self.h2h0(h_t)
+        h2 = self.h2h1(h1)
         h3 = self.h2h2(h2)
         h4 = self.h2h3(h3)
         h5 = self.h2h4(h4)
@@ -232,8 +234,8 @@ class RNN(nn.Module):
         MSE_loss_history: list of MSE loss.
         KL_loss_history: hardcoded to list of 0 (NA).
         """
-        # Initialize dataset
-        data = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
+        # Initialize dataset - use training data with missing points
+        data = shjnn.CustomDataset(dataset['train_trajs'], dataset['train_times'])
         # print(f"debug: rnn: train: dataset shape: {len(data)}")
         # Split dataset into training and validation sets
         # TODO: this is technically a good idea but the dataset produces 9 mini-batches in total which makes this split not viable.
@@ -264,12 +266,16 @@ class RNN(nn.Module):
                     # No need for redundant device transfers - tensors already moved by DataLoader
                     self.train_step(x_batch, y_batch)
                 
-                # Validation phase
+                # Validation phase - use original data for evaluation
                 epoch_val_loss = 0
                 loss_list = []
                 
+                # Create a validation dataset using the original data (no missing points)
+                orig_data = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
+                orig_loader = DataLoader(orig_data, batch_size=10, shuffle=False)
+                
                 with torch.no_grad():  # Disable gradient computation
-                    for x_batch, y_batch in val_loader:
+                    for x_batch, y_batch in orig_loader:
                         # Clear GPU memory between validation batches
                         if torch.cuda.is_available():
                             torch.cuda.empty_cache()
@@ -321,11 +327,27 @@ class RNN(nn.Module):
         # Return final epoch and loss histories
         return n_epochs, val_loss_history, val_loss_history, 0
     
-    # TODO: not implemented. partial implementation embedded in train, and eval_step.
-    def eval(model_params=parameters.model_params, dataset=parameters.dataset):
-        return
-        dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
-        test_dataset = dataset
+    # Implementation for model evaluation using original dataset
+    def eval(self, model_params=parameters.model_params, dataset=parameters.dataset):
+        """
+        Evaluates the model on the original dataset (without missing data)
+        
+        Returns:
+            float: The average loss on the original dataset
+        """
+        # Use original data without missing points for evaluation
+        with torch.no_grad():
+            test_dataset = shjnn.CustomDataset(dataset['trajs'], dataset['times'])
+            test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=10, shuffle=False)
+            
+            loss_list = []
+            for x_batch, y_batch in test_loader:
+                loss, _, _ = self.eval_step(x_batch, y_batch, batch_input=True)
+                loss_list.append(loss)
+            
+            avg_loss = np.mean(loss_list)
+            print(f"Logs: rnn: eval: mean loss on original data: {avg_loss} at epoch {model_params['epochs']}.")
+            return avg_loss
 
         # initialise testing data loader for random mini-batches
         # TODO: look at shjnn.dataLoader more.

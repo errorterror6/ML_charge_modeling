@@ -59,12 +59,15 @@ class LSTM(RNN):
         _, (h_t, c_t) = self.temporal(data, (hidden, self.cell_state))
         
         # Update our stored cell state
-        #TODO: check out what cell_state does in LSTMs and how its meant to be used.
-        
         self.cell_state = c_t
         
-        h2 = self.h2h1(h_t)
-        output = self.h2o(h2)
+        # Match the parent RNN class processing pipeline
+        h1 = self.h2h0(h_t)
+        h2 = self.h2h1(h1)
+        h3 = self.h2h2(h2)
+        h4 = self.h2h3(h3)
+        h5 = self.h2h4(h4)
+        output = self.h2o(h5)
         
         # Return output and hidden state (h_t only to match parent class interface)
         return output, h_t

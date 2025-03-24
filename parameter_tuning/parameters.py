@@ -16,15 +16,20 @@ import shjnn
 
 #contains the dataset. to be loaded in my the dataloader or init.py.
 dataset = {
-    'trajs': None,
-    'times': None,
-    'y': None,   # intensity, voltage, delay, thickness.
-    'cut_zero': True, # whether to delete all data before t=0
+    'trajs': None,       # Will store original trajectories
+    'times': None,       # Will store original time points
+    'y': None,           # intensity, voltage, delay, thickness.
+    'cut_zero': True,    # whether to delete all data before t=0
+    
+    # Will store trajectories with missing data points
+    'train_trajs': None,
+    # Will store time points with missing data points
+    'train_times': None,
     
     # set indices of missing data here. [1, 70].
     # if both options are populated, random drops will be prioritised with drop_number.
     'missing_idx': None,
-    'drop_number': 0,
+    'drop_number': 5,
     
 }
 
@@ -58,7 +63,7 @@ model_params = {
 
     'latent_dim': 16,
     #NOTE: reccomended to decrease this to 1e-5 or similar for training
-    'lr':5e-5,
+    'lr':5e-4,
     'n_batch': 16,  #batch size
     'beta': 0.1,
 
@@ -71,7 +76,7 @@ model_params = {
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
     # NOTE: due a bug, total_epochs_Train must be greater than 14.
-    'total_epochs_train': 600,
+    'total_epochs_train': 14,
     'epochs_per_train': 2,
     'epochs': [], # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss

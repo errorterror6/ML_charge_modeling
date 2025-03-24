@@ -191,10 +191,10 @@ def display_random_fit(model_params=parameters.model_params, dataset=parameters.
     None
         The function creates and optionally saves a plot but doesn't return any values
     """
-    # Extract data from dataset
-    trajectories = dataset['trajs']
-    time_points = dataset['times']
-    metadata = dataset['y']  # Contains parameters like intensity, bias, delay
+    # Extract data from dataset - use original data without missing points
+    trajectories = dataset['trajs']  # Original data (with no missing points)
+    time_points = dataset['times']   # Original time points
+    metadata = dataset['y']          # Contains parameters like intensity, bias, delay
     
     # print(f"Debug: B-VAE: visualisation: display_random: trajectories shape: {trajectories.shape}")
     # print(f"Debug: B-VAE: visualisation: display_random: time_points shape: {time_points.shape}")

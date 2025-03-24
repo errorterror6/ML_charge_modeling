@@ -79,9 +79,19 @@ def load_data(drop_data=False):
     parameters.model_params['obs_dim'] = obs_dim
     print("Logs: Init: Finished initialising data from dataloader")
     
+    # Store copies of original data before introducing missing data
     if drop_data:
+        # Deep copy original data to train_trajs and train_times
+        parameters.dataset['train_trajs'] = parameters.dataset['trajs'].clone()
+        parameters.dataset['train_times'] = parameters.dataset['times'].clone()
+        
+        # Modify the training data to have missing points
         data_dropout.modify_data()
         print("Logs: Init: Modified data to have missing data.")
+    else:
+        # If no missing data, training data is the same as original data
+        parameters.dataset['train_trajs'] = parameters.dataset['trajs'].clone()
+        parameters.dataset['train_times'] = parameters.dataset['times'].clone()
     
 
 
