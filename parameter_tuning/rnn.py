@@ -122,8 +122,8 @@ class RNN(nn.Module):
                 
                 # print(f"debug: rnn: forward_step: seq: {t} out shape: {out.shape}, sample: {out[0]}")
                 
-                # Save output for next missing data substitution
-                prev_output = current_input.clone()  # Save known good input
+                # Save model prediction for next missing data substitution
+                prev_output = out.detach().clone()  # Save model prediction as next input when data is missing
                 
                 if torch.isnan(out).any():
                     print(f"rnn: forward_step: NaN detected in output at step {t}. Exiting.")
