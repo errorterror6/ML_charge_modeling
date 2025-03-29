@@ -1,13 +1,13 @@
-import parameters
+from . import parameters
 import torch
 from torch import nn
-import visualisation
+from . import visualisation
 import numpy as np
-import loader
+from . import loader
 import os
 
 import sys
-sys.path.append('../libs/')
+sys.path.append('../../libs/')
 import shjnn
 
 class B_VAE:

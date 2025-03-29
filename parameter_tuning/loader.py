@@ -13,9 +13,9 @@ from scipy.signal import savgol_filter
 
 import torch, math
 
-import parameters
-import init
-import visualisation
+from . import parameters
+from . import init
+from . import visualisation
 
 import sys
 sys.path.append('../libs/')
@@ -30,7 +30,12 @@ def load_data(data_out=parameters.dataset):
     ## load raw data from file
 
     # open binary file for reading
-    with open('{}/{}'.format('../run/', 'raw-full'), 'rb') as file:
+    import os
+    # Get ML_charge_modeling directory regardless of where we're running from
+    ml_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(ml_dir, 'run', 'raw-full')
+    print(f"Trying to open file at: {file_path}")
+    with open(file_path, 'rb') as file:
 
         # load pickled data storage array
         db = pickle.load(file)

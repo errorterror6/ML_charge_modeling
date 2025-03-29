@@ -5,14 +5,14 @@ import time, os
 import pandas as pd
 
 
-import init
-import loader
-import visualisation
-import parameters
+from . import init
+from . import loader
+from . import visualisation
+from . import parameters
 import sys
-from rnn import RNN 
-from b_vae import B_VAE
-sys.path.append('../libs/')
+from .serial import RNN
+from .b_vae import B_VAE
+sys.path.append('../../libs/')
 import shjnn
 
 

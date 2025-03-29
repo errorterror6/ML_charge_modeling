@@ -19,8 +19,8 @@ from PIL import Image
 from scipy.signal import savgol_filter
 
 import sys
-sys.path.append('../libs/')
-import parameters
+sys.path.append('../../libs/')
+from . import parameters
 import shjnn
 
 

@@ -1,14 +1,13 @@
-import parameters
-import loader
-import rnn
-import b_vae
-import lstm
+from . import parameters
+from . import loader
+from .serial import RNN, LSTM
+from . import b_vae
 import torch
 
-import data_dropout
+from . import data_dropout
 
 import sys
-sys.path.append('../libs/')
+sys.path.append('../../libs/')
 import shjnn
 
 
@@ -57,7 +56,7 @@ def init_RNN(model_params=parameters.model_params):
     #check if cuda is available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_params['device'] = device
-    return rnn.RNN(model_params)
+    return RNN(model_params)
 
 def init_LSTM(model_params=parameters.model_params):
     epochs = 0
@@ -65,7 +64,7 @@ def init_LSTM(model_params=parameters.model_params):
     #check if cuda is available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_params['device'] = device
-    return lstm.LSTM(model_params)
+    return LSTM(model_params)
 
 def init_B_VAE(model_params=parameters.model_params):
     epochs=0

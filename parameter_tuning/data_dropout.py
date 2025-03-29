@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import random
 
-import parameters
+from . import parameters
 
 DEFAULT_SEED = 0
 

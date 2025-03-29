@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-import loader
+# Removed loader import to avoid circular dependency
 
 import sys
 sys.path.append('../libs/')
