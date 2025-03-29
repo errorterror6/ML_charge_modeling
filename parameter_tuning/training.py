@@ -60,9 +60,9 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
 
     # update loss, epochs
     model_params['epochs'] += _epochs
-    # print(f'debug: printing out _epochs: {_epochs}')
+    # print(f"debug: printing out _epochs: {_epochs}")
     model_params['loss'].append(np.average(eval_loss))
-    # print(f'debug: printing out mse loss: {np.average(_MSE_loss)}')
+    # print(f"debug: printing out mse loss: {np.average(_MSE_loss)}")
     model_params['MSE_loss'].append(np.average(_MSE_loss))
     model_params['KL_loss'].append(np.average(_KL_loss))
 
@@ -165,7 +165,7 @@ def LSTM_training_loop(n_epochs, model_params=parameters.model_params, dataset=p
     # update loss, epochs
     model_params['epochs'] += _epochs
     # model_params['loss'].append(np.average(_loss))
-    print(f'debug: loss size: {len(model_params['loss'])}')
+    print(f"debug: loss size: {len(model_params['loss'])}")
 
     return model_params
 
@@ -216,12 +216,12 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
     timestr = time.strftime("%Y%m%d-%H%M%S")
     folder = './saves/' + timestr + '_' + name + '_' + desc
     if grid_search:
-        folder = f'./saves/grid_seach/{grid_search_name}/' + timestr + '_' + name + '_' + desc
+        folder = f"./saves/grid_seach/{grid_search_name}/" + timestr + '_' + name + '_' + desc
         #make parent dirs
-        # if not os.path.exists(f'./saves/grid_seach'):
-        #     os.makedirs(f'./saves/grid_seach')
-        # if not os.path.exists(f'./saves/grid_seach/{grid_search_name}'):
-        #     os.makedirs(f'./saves/grid_seach/{grid_search_name}')
+        # if not os.path.exists(f"./saves/grid_seach"):
+        #     os.makedirs(f"./saves/grid_seach")
+        # if not os.path.exists(f"./saves/grid_seach/{grid_search_name}"):
+        #     os.makedirs(f"./saves/grid_seach/{grid_search_name}")
     model_params['folder'] = folder
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -418,19 +418,19 @@ def grid_search(model_params):
     if not excel_folder_created:
     #create excel sheet
         folder = model_params['folder']
-        excel_folder_path = f'{folder}/../excel_output'
+        excel_folder_path = f"{folder}/../excel_output"
         if not os.path.exists(excel_folder_path):
             os.makedirs(excel_folder_path)
         excel_folder_created = True
 
     #write to excel
     df = pd.DataFrame(data_record)
-    sheet = pd.ExcelWriter(f'{excel_folder_path}/summary.xlsx')
+    sheet = pd.ExcelWriter(f"{excel_folder_path}/summary.xlsx")
     df.to_excel(sheet)
     sheet.close()
 
     lf = pd.DataFrame(loss_record)
-    loss_sheet = pd.ExcelWriter(f'{excel_folder_path}/loss_record.xlsx')
+    loss_sheet = pd.ExcelWriter(f"{excel_folder_path}/loss_record.xlsx")
     lf.to_excel(loss_sheet)
     loss_sheet.close()
     print("logs: Training: Finished grid search")

@@ -59,7 +59,7 @@ def plot_training_loss(model_params, save=False, split=False, plot_total=False, 
         mse_loss = model_params['MSE_loss']
         kl_loss = model_params['KL_loss']
         total_loss = model_params['loss']
-        print(f'Debug: total_loss shape: {len(total_loss)} at epoch {model_params["epochs"]}')
+        print(f"Debug: total_loss shape: {len(total_loss)} at epoch {model_params['epochs']}")
         
         # Set up figure dimensions
         fig_width = 5

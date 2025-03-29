@@ -27,10 +27,13 @@ def init_shjnn(model_params=parameters.model_params):
     lr = model_params['lr']
     n_batch = model_params['n_batch']
 
-    func, rec, dec, optim, device = shjnn.init_model(latent_dim, nhidden, rnn_nhidden, obs_dim, n_batch, lr, device = 'cpu')
+    # Use GPU if available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    func, rec, dec, optim, _ = shjnn.init_model(latent_dim, nhidden, rnn_nhidden, obs_dim, n_batch, lr, device=device)
     loss: list = []
     epochs = 0
-    device
+    # Print device info for debugging
+    print(f"Logs: Init: Using device: {device}")
 
     model_params['epochs'] = epochs
 

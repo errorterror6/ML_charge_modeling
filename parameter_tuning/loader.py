@@ -285,6 +285,13 @@ def load_data(data_out=parameters.dataset):
 def save_random_fit(model_params=parameters.model_params, dataset=parameters.dataset, random_samples=True):
     visualisation.display_random_fit(model_params, dataset, show=False, save=True, random_samples=random_samples)
 
+def get_formatted_data(data_in=parameters.dataset):
+    """
+    from data_in, format the data so that it is in the format used to train b_vae, including zero-mean unit-variance standardisation.
+    additionally, each sequence should also 
+    """
+    pass
+
 def save_model_params(model_params=parameters.model_params):
     #save model params as json file
     folder = model_params['folder']
@@ -318,14 +325,14 @@ def save_model_params(model_params=parameters.model_params):
 
     if not os.path.exists(folder + '/model'):
         os.makedirs(folder + '/model')
-    with open(folder + f'/model/model_params_epoch_{epoch}.json', 'w') as fp:
+    with open(folder + f"/model/model_params_epoch_{epoch}.json", 'w') as fp:
         json.dump(model_params_save, fp)
 
 def load_model_params():
     #load model params from json file
     folder = model_params['folder']
     epoch = 5   #enter your desired epoch to extract here
-    with open(folder + f'/model/model_params_{epoch}.json', 'r') as fp:
+    with open(folder + f"/model/model_params_{epoch}.json", 'r') as fp:
         model_params = json.load(fp)
         # init.init_model(model_params)
     return model_params
@@ -402,9 +409,10 @@ def load_model(model_params):
     #load model params from json file. Overwrite model params.
     folder = ""
     epoch = 5   #enter your desired epoch to extract here
-    path = folder + f'/model/save_model_ckpt_{epoch}.pth'
+    path = folder + f"/model/save_model_ckpt_{epoch}.pth"
     try:
         load_model_params()
     except:
         print("Logs: Loader: load_model: no model params found, loading model without model params.")
     parameters.model.load_model(model_params, path)
+

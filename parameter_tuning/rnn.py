@@ -423,7 +423,7 @@ class RNN(nn.Module):
         loss = model_params['loss']
         epochs = model_params['epochs']
         folder = model_params['folder']
-        path = folder + f'/model/save_model_ckpt_{epoch}.pth'
+        path = folder + f"/model/save_model_ckpt_{epoch}.pth"
         
         # save rnn model
         torch.save(self.state_dict(), path)

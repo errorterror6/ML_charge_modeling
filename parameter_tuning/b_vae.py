@@ -36,23 +36,97 @@ class B_VAE:
             model_func, encoder, decoder, optimizer, device, 
             input_mode='traj', sample=False
         )
-        sample_indices = list(range(len(trajectories)))
-        print(f"logs: b_vae: eval: evaluating over {len(sample_indices)} samples.")
+        total_samples = len(trajectories)
+        print(f"logs: b_vae: eval: evaluating over {total_samples} samples.")
         loss_list = []
-        for idx, traj_idx in enumerate(sample_indices):
-            # Free up GPU memory between samples
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            traj_tensor = trajectories[traj_idx].view(1, *trajectories[traj_idx].size()).to(device)
-            time_tensor = time_points[traj_idx].view(1, *time_points[traj_idx].size()).to(device)
+        
+        try:
+            # Process in batches for better GPU utilization
+            batch_size = model_params['n_batch']
+            n_batches = (total_samples + batch_size - 1) // batch_size  # Ceiling division
             
-            pred_x, pred_z = infer_step(traj_tensor, time_tensor)
+            for batch_idx in range(n_batches):
+                # Clear GPU cache before each batch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    
+                # Determine batch range
+                start_idx = batch_idx * batch_size
+                end_idx = min(start_idx + batch_size, total_samples)
+                batch_indices = list(range(start_idx, end_idx))
+                batch_size_actual = len(batch_indices)
+                
+                # Skip empty batches
+                if batch_size_actual == 0:
+                    continue
+                    
+                # Prepare batch tensors
+                batch_trajs = []
+                batch_times = []
+                
+                for traj_idx in batch_indices:
+                    batch_trajs.append(trajectories[traj_idx])
+                    batch_times.append(time_points[traj_idx])
+                
+                # Stack into batch tensors and move to device
+                traj_tensor = torch.stack(batch_trajs).to(device)
+                time_tensor = torch.stack(batch_times).to(device)
+                
+                # We need to process each sample in the batch separately
+                # because infer_step's ODE solver expects a specific format for time_points
+                batch_pred_x = []
+                for i in range(batch_size_actual):
+                    # Process individual samples from the batch
+                    sample_traj = traj_tensor[i:i+1]
+                    sample_time = time_tensor[i:i+1]
+                    
+                    # Run inference step
+                    sample_pred_x, _ = infer_step(sample_traj, sample_time)
+                    batch_pred_x.append(sample_pred_x)
+                
+                # Combine results back into a batch
+                pred_x = torch.cat(batch_pred_x, dim=0)
+                
+                # Compute individual losses for each sample
+                for i in range(batch_size_actual):
+                    # Extract individual predictions and targets
+                    pred_x_i = pred_x[i:i+1]
+                    traj_tensor_i = traj_tensor[i:i+1]
+                    
+                    # Compute individual sample loss
+                    individual_loss = torch.nn.MSELoss()(pred_x_i.to(device), traj_tensor_i.to(device))
+                    loss_list.append(individual_loss.item())
+                
+                # Calculate and report batch average loss
+                batch_avg_loss = sum(loss_list[-batch_size_actual:]) / batch_size_actual
+                print(f"logs: b_vae: eval: batch {batch_idx+1}/{n_batches}, avg loss: {batch_avg_loss:.6f}")
+                
+        except Exception as e:
+            print(f"Error during batch evaluation: {e}")
             
-            #currently both at [1, 70, 1]
-            # No need for redundant .to(device) calls - tensors are already on the device
-            loss = torch.nn.MSELoss()(pred_x, traj_tensor)
-            loss_list.append(loss.item())
-        print(f"logs: b_vae: eval: mean loss over {len(sample_indices)} samples: {np.mean(loss_list)} at epoch {epoch_num}.") 
+            # Fallback to single sample processing if batch processing fails
+            print("logs: b_vae: eval: falling back to single sample processing")
+            loss_list = []
+            
+            for traj_idx in range(total_samples):
+                # Clear GPU cache
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                
+                # Process individual sample
+                traj_tensor = trajectories[traj_idx].view(1, *trajectories[traj_idx].size()).to(device)
+                time_tensor = time_points[traj_idx].view(1, *time_points[traj_idx].size()).to(device)
+                
+                pred_x, pred_z = infer_step(traj_tensor, time_tensor)
+                
+                # Compute loss
+                loss = torch.nn.MSELoss()(pred_x.to(device), traj_tensor.to(device))
+                loss_list.append(loss.item())
+                
+                # Debug output every 10 samples
+                if (traj_idx + 1) % 10 == 0:
+                    print(f"logs: b_vae: eval: processed {traj_idx+1}/{total_samples} samples")
+        print(f"logs: b_vae: eval: mean loss over {total_samples} samples: {np.mean(loss_list)} at epoch {epoch_num}.") 
         return np.mean(loss_list)
             
     def save_model(self, model_params):
@@ -71,7 +145,7 @@ class B_VAE:
         loss = model_params['loss']
         epochs = model_params['epochs']
         folder = model_params['folder']
-        path = folder + f'/model/save_model_ckpt_{epoch}.pth'
+        path = folder + f"/model/save_model_ckpt_{epoch}.pth"
         shjnn.save_state(path, func, rec, dec, optim, loss, epochs) 
         
         loader.save_model_params(model_params)
