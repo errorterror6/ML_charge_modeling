@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
-import parameter_tuning.parameters as parameters
+import sys
+sys.path.append('..')
+import parameters
 from torch import nn
 import torch, random, glob, os
 from torch.utils.data import DataLoader, TensorDataset
-import parameter_tuning.visualisation as visualisation
+import visualisation
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import random
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
-import parameter_tuning.loader as loader
+import loader
 
 import sys
 sys.path.append('../../libs/')

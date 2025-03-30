@@ -1,9 +1,9 @@
-from . import parameters
+import parameters
 import torch
 from torch import nn
-from . import visualisation
+import visualisation
 import numpy as np
-from . import loader
+import loader
 import os
 
 import sys

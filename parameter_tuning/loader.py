@@ -13,9 +13,9 @@ from scipy.signal import savgol_filter
 
 import torch, math
 
-from . import parameters
-from . import init
-from . import visualisation
+import parameters
+import init
+import visualisation
 
 import sys
 sys.path.append('../libs/')

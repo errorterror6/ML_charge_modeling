@@ -20,7 +20,7 @@ from scipy.signal import savgol_filter
 
 import sys
 sys.path.append('../../libs/')
-from . import parameters
+import parameters
 import shjnn
 
 

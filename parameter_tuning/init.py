@@ -1,10 +1,10 @@
-from . import parameters
-from . import loader
-from .serial import RNN, LSTM
-from . import b_vae
+import parameters
+import loader
+from serial import RNN, LSTM
+import b_vae
 import torch
 
-from . import data_dropout
+import data_dropout
 
 import sys
 sys.path.append('../../libs/')

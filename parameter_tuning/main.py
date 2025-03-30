@@ -1,12 +1,13 @@
 print("Loading....")
 import sys
-sys.path.append('/mnt/c/vscode/thesis/ML_charge_modeling')
+import os
 
-import parameter_tuning.loader as loader
-import parameter_tuning.parameters as parameters
-import parameter_tuning.training as training
-import parameter_tuning.init as init
-import parameter_tuning.data_dropout as data_dropout
+# Use direct imports instead of package imports
+import loader
+import parameters
+import training
+import init
+import data_dropout
 
 import sys
 import time

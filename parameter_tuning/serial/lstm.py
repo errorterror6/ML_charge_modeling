@@ -1,4 +1,6 @@
-import parameter_tuning.parameters as parameters
+import sys
+sys.path.append('..')
+import parameters
 from torch import nn
 import torch
 import os
@@ -7,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
-import parameter_tuning.loader as loader
+import loader
 import sys
 sys.path.append('../../libs/')
 import shjnn
