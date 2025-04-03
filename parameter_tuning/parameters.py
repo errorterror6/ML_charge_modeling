@@ -44,6 +44,7 @@ model = None
 rnn = None
 b_vae = None
 
+
 #tune hyper-params here.
 model_params = {
     # hyper params
@@ -98,6 +99,11 @@ model_params = {
     'debug': 1,
     'debug_list': [],
     'debug_list2': []
+}
+
+
+ae_params = {
+    
 }
 
 records = {
