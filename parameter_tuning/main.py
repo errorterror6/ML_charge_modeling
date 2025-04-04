@@ -42,15 +42,14 @@ if __name__ == '__main__':
         drop_data = False
     init.load_data(drop_data=drop_data)
     
-    train, val, data = loader.get_formatted_data()
-    for x, y, meta in train:
-        stacked = loader.compile_stacked_data(x, y, meta)
-        print(loader.compile_stacked_data(x, y, meta).shape)
-        print(stacked[0])
-       
-        
-        break
-    exit(1)
+    #testing code.
+    # train, val, data = loader.get_formatted_data()
+    # for x, y, meta in train:
+    #     stacked = loader.compile_stacked_data(x, y, meta)
+    #     print(loader.compile_stacked_data(x, y, meta).shape)
+    #     print(stacked[0]) 
+    #     break
+    # exit(1)
     
     # data_dropout.verify_missing_data()
     # exit(0)
