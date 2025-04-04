@@ -11,6 +11,7 @@ import data_dropout
 
 import sys
 import time
+import torch
 
 if __name__ == '__main__':
     
@@ -41,6 +42,16 @@ if __name__ == '__main__':
         drop_data = False
     init.load_data(drop_data=drop_data)
     
+    train, val, data = loader.get_formatted_data()
+    for x, y, meta in train:
+        stacked = loader.compile_stacked_data(x, y, meta)
+        print(loader.compile_stacked_data(x, y, meta).shape)
+        print(stacked[0])
+       
+        
+        break
+    exit(1)
+    
     # data_dropout.verify_missing_data()
     # exit(0)
     
@@ -55,6 +66,8 @@ if __name__ == '__main__':
         case _:
             print("Logs: Main: Invalid trainer. Exiting.")
             exit(1)
+            
+    
             
     time_start = time.time()    
         

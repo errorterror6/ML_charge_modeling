@@ -13,6 +13,8 @@ from scipy.signal import savgol_filter
 
 import torch, math
 
+from torch.utils.data import DataLoader
+
 import parameters
 import init
 import visualisation
@@ -280,6 +282,7 @@ def load_data(data_out=parameters.dataset):
     # compile trajectories, time as tensors, push to device
     trajs = torch.Tensor(d).to(parameters.device)
     times = torch.Tensor(ts).to(parameters.device)
+    y = torch.Tensor(y).to(parameters.device)
 
     print("Logs: loader: load_data, length of trajs, shape of trajs[0], shape of times[0]: ", len(d), d[0].shape, ts[0].shape)
 
@@ -290,12 +293,55 @@ def load_data(data_out=parameters.dataset):
 def save_random_fit(model_params=parameters.model_params, dataset=parameters.dataset, random_samples=True):
     visualisation.display_random_fit(model_params, dataset, show=False, save=True, random_samples=random_samples)
 
-def get_formatted_data(data_in=parameters.dataset):
+def get_formatted_data(d=parameters.dataset, m=parameters.model_params):
     """
-    from data_in, format the data so that it is in the format used to train b_vae, including zero-mean unit-variance standardisation.
-    additionally, each sequence should also 
+    from dataset, get read-to-use data loaders for training and validation
+    Args:
+        d (dict): dataset containing trajectories and times
+        m (dict): model parameters including batch size
+    Returns:
+        tuple: train_loader, val_loader, data
     """
-    pass
+    data = shjnn.CustomDataset(d['trajs'], d['times'], d['y'])
+    train_size = int(0.8 * len(data))  # NOTE: change to 0.8 for 80/20 split
+
+    val_size = int(0.2 * len(data))
+    train_dataset, val_dataset = torch.utils.data.random_split(data, [train_size, val_size])
+    train_loader = DataLoader(train_dataset, batch_size=m['n_batch'], shuffle=True, drop_last=True)
+    val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False)
+    return train_loader, val_loader, data
+
+def compile_stacked_data(x, y, meta):
+    """
+    Compile data into a stacked tensor for training
+    Args:
+        x (tensor): input tensor
+        y (tensor): output tensor
+        meta (tensor): metadata tensor
+    Returns:
+        tensor: stacked tensor
+    """
+    # stack tensors along the last dimension
+    obs = torch.cat((x, y), dim=-1)
+    
+    # Expand metadata to match sequence length
+    # meta shape: [batch_size, 4]
+    # Need to repeat for each time step in the sequence
+    batch_size, seq_length, input_dim = obs.shape
+    meta_dim = meta.shape[1]
+    
+    # Reshape meta to [batch_size, 1, meta_dim] and repeat along sequence dimension
+    expanded_meta = meta.unsqueeze(1).expand(batch_size, seq_length, meta_dim)
+    
+    # Concatenate expanded metadata with obs
+    # obs shape: [batch_size, seq_length, input_dim]
+    # expanded_meta shape: [batch_size, seq_length, meta_dim]
+    # result shape: [batch_size, seq_length, input_dim + meta_dim]
+    obs = torch.cat((obs, expanded_meta), dim=-1)
+    
+    # Add an extra dimension as required
+    
+    return obs
 
 def save_model_params(model_params=parameters.model_params):
     #save model params as json file

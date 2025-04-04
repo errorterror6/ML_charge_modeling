@@ -38,7 +38,7 @@ dataset_PV = {
     'elec_df': r'C:\Users\z5183876\Documents\GitHub\PV-syst-data\Bomen\data_from_server\2021_elec_df.pkl'
     }
 
-#choose between options 'B-VAE', 'RNN', 'LSTM'
+#choose between options 'B-VAE', 'RNN', 'LSTM', 'RNN-VAE', 'CNN-VAE', 'LSTM-VAE'
 trainer = 'B-VAE'
 model = None
 rnn = None
@@ -102,7 +102,9 @@ model_params = {
 }
 
 
-ae_params = {
+vae_params = {
+    #rnn properties
+    'rnn_nhidden': 256,
     
 }
 
