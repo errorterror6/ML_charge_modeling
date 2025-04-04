@@ -16,13 +16,7 @@ class DecoderBase(nn.Module, ABC):
         super(DecoderBase, self).__init__()
         self.latent_dim = m['latent_dim']
         self.obs_dim = m['obs_dim']
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=m['lr'])
         
-    def zero_grad(self):
-        """
-        Zero the gradients of the decoder parameters.
-        """
-        self.optimizer.zero_grad()
     
     @abstractmethod
     def forward(self, z):

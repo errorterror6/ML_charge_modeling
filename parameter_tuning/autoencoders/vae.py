@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 
-import encoders
-import decoders
+from . import encoders
+from . import decoders
 
 from abc import ABC, abstractmethod
 
@@ -22,7 +22,10 @@ class VAE(nn.Module):
         self.encoder = enc
         self.decoder = dec
         self.loss_fn = torch.nn.MSELoss() if loss_function is None else loss_function
-        
+        self.optimizer = torch.optim.Adam(
+            list(self.encoder.parameters()) + list(self.decoder.parameters()),
+            lr=parameters.vae_params['learning_rate']
+        )
     
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
@@ -54,16 +57,15 @@ class VAE(nn.Module):
 
     def train_step(self, input_data):
         #input data is expected to be [16, 70, 6]
-        self.encoder.train()
-        self.decoder.train()
+        self.train()
         
         reversed_data = loader.reverse_traj(input_data)
         reconstruction, mu, log_var, z = self.forward(reversed_data)
         loss, recon_loss, kl_loss = self.loss_function(reversed_data, reconstruction, mu, log_var)
         self.optimizer.zero_grad()
         loss.backward()
-        self.encoder.optimizer.step()
-        
+        self.optimizer.step()
+    
         return loss, recon_loss, kl_loss
     
     def eval_loss_fn(self, traj, reconstruction):
@@ -77,8 +79,7 @@ class VAE(nn.Module):
         return recon_loss
     
     def eval_step(self, input_data):
-        self.encoder.eval()
-        self.decoder.eval()
+        self.eval()
         
         with torch.no_grad():
             reversed_data = loader.reverse_traj(input_data)
@@ -129,6 +130,7 @@ class VAE(nn.Module):
                     recon_loss += loss[1]
                     kl_loss += loss[2]
                     eval_loss += eval_loss
+                    
                 total_loss /= len(val)
                 recon_loss /= len(val)
                 kl_loss /= len(val)
@@ -137,14 +139,16 @@ class VAE(nn.Module):
                 recon_loss_history.append(recon_loss)
                 kl_loss_history.append(kl_loss)
                 eval_loss_history.append(eval_loss)
+                
                 print(f"Epoch {epoch}: Eval Loss {eval_loss:.3f}, "
                     f"KL Loss {kl_loss:.2f}, Feature Loss {recon_loss:.2f}, Total Loss {total_loss:.2f}")
-                return n_epochs, eval_loss_history, (total_loss_history, recon_loss_history, kl_loss_history)
                 
                     
             except KeyboardInterrupt:
                 print("logs: vae: train_nepochs: Training interrupted by keyboard.")
                 exit(1)
+        return n_epochs, eval_loss_history, (total_loss_history, recon_loss_history, kl_loss_history)
+
                 
         
     @classmethod

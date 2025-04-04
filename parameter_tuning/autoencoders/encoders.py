@@ -16,13 +16,6 @@ class EncoderBase(nn.Module, ABC):
     def __init__(self, m=parameters.model_params, v=parameters.vae_params):
         super(EncoderBase, self).__init__()
         self.latent_dim = m['latent_dim']
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=m['lr'])
-        
-    def zero_grad(self):
-        """
-        Zero the gradients of the encoder parameters.
-        """
-        self.optimizer.zero_grad()
     
     @abstractmethod
     def forward(self, x):
@@ -76,7 +69,7 @@ class RNNEncoder(EncoderBase):
     RNN Encoder for VAE.
     """
     def __init__(self, m=parameters.model_params, v=parameters.vae_params):
-        super(RNNEncoder, self).__init__()
+        super(RNNEncoder, self).__init__(m, v)
         hidden_dim = v['rnn_nhidden']
         latent_dim = m['latent_dim']
         self.rnn = nn.RNN(
