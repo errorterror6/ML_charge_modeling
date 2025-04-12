@@ -1,17 +1,13 @@
 print("Loading....")
-import sys
-import os
 
 # Use direct imports instead of package imports
 import loader
 import parameters
 import training
 import init
-import data_dropout
 
 import sys
 import time
-import torch
 
 if __name__ == '__main__':
     
@@ -26,7 +22,7 @@ if __name__ == '__main__':
         parameters.model_params['name'] = 'default'
     parameters.model_params['desc'] = input("Enter a description: ")
     drop_data = input("run with missing data? (y/n): ")
-    parameters.trainer = input("Enter the trainer to use (B-VAE, RNN, LSTM): ")
+    parameters.trainer = input("Enter the trainer to use (B-VAE, RNN, LSTM, MLP-VAE, RNN-VAE, LSTM-VAE): ")
     
     print("Logs: Main: Using trainer: ", parameters.trainer)
     
@@ -54,14 +50,17 @@ if __name__ == '__main__':
     # data_dropout.verify_missing_data()
     # exit(0)
     
-    init.init_shjnn(parameters.model_params)
+    
     match parameters.trainer:
-        case 'B-VAE':       
+        case 'B-VAE':   
+            init.init_shjnn(parameters.model_params)    
             parameters.model = init.init_B_VAE(parameters.model_params)
         case 'RNN':
             parameters.model = init.init_RNN(parameters.model_params)
         case 'LSTM':
             parameters.model = init.init_LSTM(parameters.model_params)
+        case 'RNN-VAE' | 'MLP-VAE' | 'LSTM-VAE':
+            parameters.model = init.init_autoencoder(parameters.model_params)
         case _:
             print("Logs: Main: Invalid trainer. Exiting.")
             exit(1)

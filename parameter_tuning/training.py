@@ -12,6 +12,7 @@ import parameters
 import sys
 from serial import RNN
 from b_vae import B_VAE
+from autoencoders import vae
 sys.path.append('../../libs/')
 import shjnn
 
@@ -95,11 +96,7 @@ def RNN_training_loop(n_epochs, model_params=parameters.model_params, dataset=pa
     lr = model_params['lr']
     n_batch = model_params['n_batch']
     beta = model_params['beta']
-    optim = model_params['optim']
 
-
-    for g in optim.param_groups:
-        g['lr'] = lr
 
     # get training data with missing points
     trajs = dataset['train_trajs']
@@ -139,11 +136,7 @@ def LSTM_training_loop(n_epochs, model_params=parameters.model_params, dataset=p
     lr = model_params['lr']
     n_batch = model_params['n_batch']
     beta = model_params['beta']
-    optim = model_params['optim']
-
-
-    for g in optim.param_groups:
-        g['lr'] = lr
+ 
 
     # get training data with missing points
     trajs = dataset['train_trajs']
@@ -169,6 +162,71 @@ def LSTM_training_loop(n_epochs, model_params=parameters.model_params, dataset=p
 
     return model_params
 
+def autoencoder_training_loop(n_epochs, model_params=parameters.model_params, dataset=parameters.dataset):
+    """
+        run training loop similar to B_VAE_training_loop, but with the autoencoders.
+        should use the create class method from autoencoders/vae.py file
+        Record loss in a similar fashion to the B_VAE_training loop.
+    """
+    # Get learning rate, batch size, beta and optimizer from model params
+    lr = model_params['lr']
+    n_batch = model_params['n_batch']
+    beta = model_params['beta']
+    optim = model_params['optim']
+
+    # Update learning rate in optimizer
+    for g in optim.param_groups:
+        g['lr'] = lr
+
+    # Get training data
+    trajs = dataset['train_trajs']
+    times = dataset['train_times']
+
+    # Create VAE model using the class method
+    vae_model = parameters.model
+
+    # Run training for specified epochs
+    _epochs, eval_loss, losses = vae_model.train_nepochs(n_epochs, model_params, parameters.vae_params)
+    print('Logs: training: autoencoder_training_loop: Training completed')
+    
+    # Unpack losses
+    _total_loss, _MSE_loss, _KL_loss = losses
+
+    # Evaluate on original dataset
+    with torch.no_grad():
+        # Get the original dataset in smaller batches to avoid memory issues
+        batch_size = model_params['n_batch']
+        total_batches = dataset['trajs'].size(0) // batch_size + (1 if dataset['trajs'].size(0) % batch_size != 0 else 0)
+        
+        eval_loss_total = 0
+        
+        for i in range(total_batches):
+            start_idx = i * batch_size
+            end_idx = min((i + 1) * batch_size, dataset['trajs'].size(0))
+            
+            # Format the data properly for this batch
+            orig_data = loader.compile_stacked_data(
+                dataset['trajs'][start_idx:end_idx], 
+                dataset['times'][start_idx:end_idx], 
+                dataset['y'][start_idx:end_idx]
+            )
+            
+            # Get evaluation loss
+            batch_eval_loss, _ = vae_model.eval_step(orig_data)
+            eval_loss_total += batch_eval_loss.item() * (end_idx - start_idx)
+        
+        # Calculate average evaluation loss
+        eval_loss = eval_loss_total / dataset['trajs'].size(0)
+
+    # Update model parameters with training results
+    model_params['epochs'] += _epochs
+    # Convert eval_loss to float if it's not already (when it's a single value)
+    model_params['loss'].append(eval_loss if isinstance(eval_loss, (float, int)) else np.average(eval_loss))
+    # Convert loss lists to float values
+    model_params['MSE_loss'].append(np.average(_MSE_loss))
+    model_params['KL_loss'].append(np.average(_KL_loss))
+
+    return model_params
 
 def done_training(model_params=parameters.model_params):
     """ check if training is done
@@ -239,9 +297,10 @@ def train(model_params, dataset, grid_search=False, grid_search_name="default"):
             case 'LSTM':   
                 LSTM_training_loop(train_epochs, model_params, dataset)
                 
-                # print("Logs: training: train: debug: loss: ", parameters.model_params['loss'])
+            case 'RNN-VAE' | 'MLP-VAE' | 'LSTM-VAE':
+                autoencoder_training_loop(train_epochs, model_params, dataset)
             case _:
-                print("Error: Invalid trainer, pick from options 'B-VAE'. Exiting.")
+                print("Error: Invalid trainer, pick from options 'B-VAE', 'RNN', 'LSTM', 'RNN-VAE', 'MLP-VAE', 'LSTM-VAE'. Exiting.")
                 exit(1)
         update_params(model_params, model_params['epochs'])
         # loader.save_random_fit(model_params, dataset, random_samples=False)
@@ -318,8 +377,10 @@ def adaptive_run_and_save(model_params, dataset, adaptive_training):
         match parameters.trainer:
             case 'B-VAE':
                 B_VAE_training_loop(train_epochs, model_params, dataset)
+            case 'RNN-VAE' | 'MLP-VAE' | 'LSTM-VAE':
+                autoencoder_training_loop(train_epochs, model_params, dataset)
             case _:
-                print("Error: Invalid trainer, pick from options 'B-VAE'. Exiting.")
+                print("Error: Invalid trainer, pick from options 'B-VAE', 'RNN-VAE', 'MLP-VAE', 'LSTM-VAE'. Exiting.")
                 exit(1)
         print("epochs printout:   ")
         print(model_params['epochs'])

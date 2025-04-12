@@ -1,6 +1,7 @@
 import parameters
 import loader
 from serial import RNN, LSTM
+from autoencoders import vae
 import b_vae
 import torch
 
@@ -69,6 +70,14 @@ def init_LSTM(model_params=parameters.model_params):
 def init_B_VAE(model_params=parameters.model_params):
     epochs=0
     return b_vae.B_VAE(model_params)
+
+def init_autoencoder(model_params=parameters.model_params):
+    #check if cuda is available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model_params['device'] = device
+    # Get the VAE class and use its create method
+    from autoencoders.vae import VAE
+    return VAE.create(model_params, parameters.vae_params)
 
 
 

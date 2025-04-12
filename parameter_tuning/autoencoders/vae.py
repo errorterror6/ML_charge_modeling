@@ -181,7 +181,7 @@ class VAE(nn.Module):
                 exit(1)
         return n_epochs, eval_loss_history, (total_loss_history, recon_loss_history, kl_loss_history)
 
-    def format_output(pred_x, target_timesteps=1000):
+    def format_output(self, pred_x, target_timesteps=1000):
         """             
         Extrapolates the pred_x tensor to a specified target length using linear interpolation
         between known time points.
@@ -228,6 +228,9 @@ class VAE(nn.Module):
         
         return pred_x_extrapolated
         
+    def save_model(self, model_params):
+        pass
+    
     @classmethod
     def create(cls, m=parameters.model_params, v=parameters.vae_params):
         """
