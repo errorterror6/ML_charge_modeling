@@ -220,11 +220,24 @@ def autoencoder_training_loop(n_epochs, model_params=parameters.model_params, da
 
     # Update model parameters with training results
     model_params['epochs'] += _epochs
-    # Convert eval_loss to float if it's not already (when it's a single value)
-    model_params['loss'].append(eval_loss if isinstance(eval_loss, (float, int)) else np.average(eval_loss))
-    # Convert loss lists to float values
-    model_params['MSE_loss'].append(np.average(_MSE_loss))
-    model_params['KL_loss'].append(np.average(_KL_loss))
+    
+    # Convert eval_loss to float if it's not already
+    model_params['loss'].append(eval_loss if isinstance(eval_loss, (float, int)) else float(eval_loss))
+    
+    # Move tensors to CPU and convert to float values
+    # Handle the case when _MSE_loss and _KL_loss are lists of tensors
+    if isinstance(_MSE_loss, list):
+        # Convert each tensor in the list to CPU and then to a float
+        mse_values = [float(tensor.cpu() if tensor.is_cuda else tensor) for tensor in _MSE_loss]
+        kl_values = [float(tensor.cpu() if tensor.is_cuda else tensor) for tensor in _KL_loss]
+        model_params['MSE_loss'].append(np.mean(mse_values))
+        model_params['KL_loss'].append(np.mean(kl_values))
+    else:
+        # If they're single tensors, just convert them directly
+        mse_value = float(_MSE_loss.cpu() if _MSE_loss.is_cuda else _MSE_loss)
+        kl_value = float(_KL_loss.cpu() if _KL_loss.is_cuda else _KL_loss)
+        model_params['MSE_loss'].append(mse_value)
+        model_params['KL_loss'].append(kl_value)
 
     return model_params
 
