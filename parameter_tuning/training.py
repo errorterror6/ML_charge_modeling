@@ -169,6 +169,7 @@ def LSTM_training_loop(n_epochs, model_params=parameters.model_params, dataset=p
 
     return model_params
 
+
 def done_training(model_params=parameters.model_params):
     """ check if training is done
         args: model_params

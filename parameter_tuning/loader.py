@@ -367,6 +367,45 @@ def reverse_traj(input_tensor):
     else:
         raise ValueError(f"Unexpected input shape: {input_tensor.shape}. Expected shape [batch_size, seq_length, input_dim] or [batch_size, seq_length, 1, input_dim]")
     
+def interpolate_trajectory(input_tensor, n_time):
+    """
+    Interpolate traj values at new time points given an input tensor.
+    
+    Parameters:
+      input_tensor (np.ndarray): Array of shape [1, x, 2] where each element is (traj, time).
+      new_time (np.ndarray or list): (1, 70) 70 new time points.
+      
+    Returns:
+      np.ndarray: New tensor of shape [1, 70, 2] with interpolated traj and corresponding new_time.
+    """
+    # Remove batch dimension; now data is of shape [x, 2]
+    data = input_tensor[0]
+    
+    # Extract trajectory and time values.
+    traj = data[:, 0]
+    time_orig = data[:, 1]
+    
+    new_time = n_time.squeeze()
+    
+    # Ensure the time values are sorted. If not, sort them along with traj.
+    if not np.all(np.diff(time_orig) >= 0):
+        sorted_indices = np.argsort(time_orig)
+        time_orig = time_orig[sorted_indices]
+        traj = traj[sorted_indices]
+    
+    # Use np.interp to interpolate new traj values at new_time points.
+    # np.interp performs constant extrapolation using the first or last value if new_time points
+    # are outside the range [time_orig.min(), time_orig.max()].
+    new_traj = np.interp(new_time, time_orig, traj, left=traj[0], right=traj[-1])
+    
+    # Combine interpolated traj with new_time (each as a column)
+    # This yields an array of shape [70, 2]
+    interpolated_data = np.stack([new_traj, new_time], axis=-1)
+    
+    # Reshape to add back the batch dimension, resulting in shape [1, 70, 2]
+    new_tensor = interpolated_data[np.newaxis, ...]
+    
+    return new_tensor
 
 def save_model_params(model_params=parameters.model_params):
     #save model params as json file
