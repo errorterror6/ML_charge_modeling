@@ -73,7 +73,7 @@ class RNNEncoder(EncoderBase):
         hidden_dim = v['rnn_nhidden']
         latent_dim = m['latent_dim']
         self.rnn = nn.RNN(
-            input_size=m['obs_dim'],
+            input_size=v['input_size'],
             hidden_size=hidden_dim,
             # use relu + clip_gradient if poor results with tanh
             nonlinearity='tanh',
@@ -102,7 +102,7 @@ class LSTMEncoder(EncoderBase):
         hidden_dim = v['rnn_nhidden']
         latent_dim = m['latent_dim']
         self.lstm = nn.LSTM(
-            input_size=m['obs_dim'],
+            input_size=v['input_size'],
             hidden_size=hidden_dim,
             batch_first=True
             )

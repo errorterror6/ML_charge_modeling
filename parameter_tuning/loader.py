@@ -357,12 +357,12 @@ def reverse_traj(input_tensor):
     # Check if the input tensor has the shape [batch_size, seq_length, input_dim]
     if len(input_tensor.shape) == 3:
         # Reverse the sequence dimension (dim=1)
-        return torch.flip(input_tensor, dims=[1])
+        return torch.flip(input_tensor, dims=[0, 1])
     
     # Check if the input tensor has the shape [batch_size, seq_length, 1, input_dim]
     elif len(input_tensor.shape) == 4:
         # Reverse the sequence dimension (dim=1)
-        return torch.flip(input_tensor, dims=[1])
+        return torch.flip(input_tensor, dims=[0, 1])
     
     else:
         raise ValueError(f"Unexpected input shape: {input_tensor.shape}. Expected shape [batch_size, seq_length, input_dim] or [batch_size, seq_length, 1, input_dim]")

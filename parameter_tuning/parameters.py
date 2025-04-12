@@ -60,7 +60,7 @@ model_params = {
     
     
     'rnn_nhidden': 256,
-    'obs_dim': 1,
+    'obs_dim': 6,  # Changed from 1 to 6 to match input data dimensions
 
     'latent_dim': 16,
     #NOTE: reccomended to decrease this to 1e-5 or similar for training
@@ -79,7 +79,7 @@ model_params = {
     # NOTE: due a bug, total_epochs_Train must be greater than 14.
     'total_epochs_train': 14,
     'epochs_per_train': 2,
-    'epochs': [], # a record of the epochs
+    'epochs': 0, # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 0.00001,
     'MSE_loss': [],
@@ -105,6 +105,7 @@ model_params = {
 vae_params = {
     #rnn properties
     'rnn_nhidden': 256,
+    'input_size': 6,
     
 }
 

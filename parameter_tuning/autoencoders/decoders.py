@@ -15,7 +15,7 @@ class DecoderBase(nn.Module, ABC):
     def __init__(self, m=parameters.model_params, v=parameters.vae_params):
         super(DecoderBase, self).__init__()
         self.latent_dim = m['latent_dim']
-        self.obs_dim = m['obs_dim']
+        self.obs_dim = v['input_size']
         
     
     @abstractmethod
@@ -67,7 +67,7 @@ class RNNDecoder(DecoderBase):
     """
     def __init__(self, m=parameters.model_params, v=parameters.vae_params):
         super(RNNDecoder, self).__init__(m, v)
-        hidden_dim = m['rnn_nhidden']
+        hidden_dim = v['rnn_nhidden']
         seq_len = 70  # Default sequence length, can be passed as parameter
         
         # Initial hidden state generator
@@ -75,7 +75,7 @@ class RNNDecoder(DecoderBase):
         
         # RNN cell
         self.rnn = nn.RNN(
-            input_size=1,  # Previous output as input
+            input_size=self.obs_dim,  # Previous output as input (full dimension)
             hidden_size=hidden_dim,
             nonlinearity='tanh',
             batch_first=True
@@ -105,8 +105,8 @@ class RNNDecoder(DecoderBase):
         # Generate initial hidden state from latent
         hidden = self.latent_to_hidden(z).unsqueeze(0)  # [1, batch_size, hidden_dim]
         
-        # Initialize first input (all zeros)
-        current_input = torch.zeros(batch_size, 1, 1, device=device)
+        # Initialize first input (all zeros) with correct feature dimensions
+        current_input = torch.zeros(batch_size, 1, self.obs_dim, device=device)
         
         # Store outputs
         outputs = []
@@ -133,7 +133,7 @@ class LSTMDecoder(DecoderBase):
     """
     def __init__(self, m=parameters.model_params, v=parameters.vae_params):
         super(LSTMDecoder, self).__init__(m, v)
-        hidden_dim = m['rnn_nhidden']
+        hidden_dim = v['rnn_nhidden']
         seq_len = 70  # Default sequence length, can be passed as parameter
         
         # Initial hidden state generator
@@ -142,7 +142,7 @@ class LSTMDecoder(DecoderBase):
         
         # LSTM cell
         self.lstm = nn.LSTM(
-            input_size=1,  # Previous output as input
+            input_size=self.obs_dim,  # Previous output as input (full dimension)
             hidden_size=hidden_dim,
             batch_first=True
         )
@@ -172,8 +172,8 @@ class LSTMDecoder(DecoderBase):
         hidden = self.latent_to_hidden(z).unsqueeze(0)  # [1, batch_size, hidden_dim]
         cell = self.latent_to_cell(z).unsqueeze(0)      # [1, batch_size, hidden_dim]
         
-        # Initialize first input (all zeros)
-        current_input = torch.zeros(batch_size, 1, 1, device=device)
+        # Initialize first input (all zeros) with correct feature dimensions
+        current_input = torch.zeros(batch_size, 1, self.obs_dim, device=device)
         
         # Store outputs
         outputs = []

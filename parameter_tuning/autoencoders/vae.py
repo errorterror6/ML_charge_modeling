@@ -32,7 +32,7 @@ class VAE(nn.Module):
         self.loss_fn = torch.nn.MSELoss() if loss_function is None else loss_function
         self.optimizer = torch.optim.Adam(
             list(self.encoder.parameters()) + list(self.decoder.parameters()),
-            lr=parameters.vae_params['learning_rate']
+            lr=parameters.model_params['lr']
         )
         self.visualiser = self.Visualiser(self)
     
@@ -57,6 +57,8 @@ class VAE(nn.Module):
         return reconstruction, mu, log_var, z
     
     def loss_function(self, traj, reconstruction, mu, log_var, beta=1.0):
+        # During training, use all dimensions for reconstruction loss
+        # Both traj and reconstruction should be [batch_size, seq_len, 6]
         recon_loss = self.loss_fn(reconstruction, traj)
         KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         
@@ -69,8 +71,8 @@ class VAE(nn.Module):
     def train_step(self, input_data):
         #input data is expected to be [16, 70, 6]
         self.train()
-        
         reversed_data = loader.reverse_traj(input_data)
+
         reconstruction, mu, log_var, z = self.forward(reversed_data)
         loss, recon_loss, kl_loss = self.loss_function(reversed_data, reconstruction, mu, log_var)
         self.optimizer.zero_grad()
@@ -107,9 +109,9 @@ class VAE(nn.Module):
         # traj is expected to be [16, 70, 6], same as reconstruction
         #with features [x, t, y, intensity, bias, delay]
         
-        #modify to be [16, 70, 2] to only have [x, t] features
-        traj = traj[:, :, :2]
-        reconstruction = reconstruction[:, :, :2]
+        # Only evaluate on first dimension (x) for consistent evaluation metric
+        traj = traj[:, :, 0:1]  # Take only the first feature dimension
+        reconstruction = reconstruction[:, :, 0:1]  # Take only the first feature dimension
         recon_loss = self.loss_fn(reconstruction, traj)
         return recon_loss
     
@@ -127,9 +129,9 @@ class VAE(nn.Module):
     
     def train_nepochs(self, n_epochs, m=parameters.model_params, v=parameters.vae_params, r=parameters.records):
         train, val, orig = loader.get_formatted_data()
-        train = train.to(m['device'])
-        val = val.to(m['device'])
-        orig = orig.to(m['device'])
+        # train = train.to(m['device'])
+        # val = val.to(m['device'])
+        # orig = orig.to(m['device'])
         total_loss_history = []
         recon_loss_history = []
         kl_loss_history = []
@@ -358,6 +360,7 @@ class VAE(nn.Module):
                 
                 # Extract trajectory and combine with time for interpolation
                 batch_size, seq_len, obs_dim = pred_x.shape
+                # We still focus on the first dimension (x) for visualization
                 trajectory_values = pred_x[:, :, 0]  # Get first dimension of reconstruction
                 interpolation_input = torch.stack([trajectory_values, time_tensor], dim=-1)  # Shape [batch_size, seq_len, 2]
                 

@@ -175,8 +175,8 @@ def autoencoder_training_loop(n_epochs, model_params=parameters.model_params, da
     optim = model_params['optim']
 
     # Update learning rate in optimizer
-    for g in optim.param_groups:
-        g['lr'] = lr
+    # for g in optim.param_groups:
+    #     g['lr'] = lr
 
     # Get training data
     trajs = dataset['train_trajs']
