@@ -61,7 +61,7 @@ class VAE(nn.Module):
         # Both traj and reconstruction should be [batch_size, seq_len, 6]
         recon_loss = self.loss_fn(reconstruction, traj)
         KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-        
+        # return recon_loss, recon_loss, KLD
         return recon_loss + beta * KLD, recon_loss, KLD
     
     
@@ -270,7 +270,7 @@ class VAE(nn.Module):
             visualisation.plot_training_loss(model_params, save=save, split=split, plot_total=plot_total, plot_MSE=False, plot_KL=False)
             # visualisation.plot_training_loss(model_params, save=save, split=True, plot_total=False, plot_MSE=plot_MSE, plot_KL=plot_KL)
 
-        def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=True, save=False, random_samples=True):
+        def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=False, save=True, random_samples=True):
             """
             Display model fit on random samples from the dataset.
             
@@ -356,13 +356,17 @@ class VAE(nn.Module):
                 time_1k_tensor = torch.Tensor(pred_times).to(device)
 
                 # Run model inference
+                print("input_tensor:", input_tensor)
                 pred_x, pred_z = self.model.infer_step(input_tensor)
+                print("pred_x:", pred_x)
                 
                 # Extract trajectory and combine with time for interpolation
                 batch_size, seq_len, obs_dim = pred_x.shape
                 # We still focus on the first dimension (x) for visualization
                 trajectory_values = pred_x[:, :, 0]  # Get first dimension of reconstruction
-                interpolation_input = torch.stack([trajectory_values, time_tensor], dim=-1)  # Shape [batch_size, seq_len, 2]
+                # Stack along the last dimension to match the expected format for interpolate_trajectory
+                # Shape [batch_size, seq_len, 2] where each point has (traj_value, time_value)
+                interpolation_input = torch.stack([trajectory_values.squeeze().unsqueeze(dim=1), time_tensor], dim=-1)
                 
                 # Convert tensors to numpy arrays before interpolation
                 interpolation_input_np = interpolation_input.detach().cpu().numpy()
@@ -382,12 +386,21 @@ class VAE(nn.Module):
                 # print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
 
                 # Convert prediction to numpy for plotting
-                pred_x_np = pred_x.detach().cpu().numpy()[0]
+                # print(f"pred_x shape: {pred_x.shape}")
+                # pred_x shape here is [1, 1000]
+                pred_x_np = pred_x.detach().cpu().numpy()
+                # print(f"pred_x_np shape before indexing: {pred_x_np.shape}")
+                
+                # Remove batch dimension if it exists
+                if len(pred_x_np.shape) > 1 and pred_x_np.shape[0] == 1:
+                    pred_x_np = pred_x_np.reshape(pred_x_np.shape[1])
+                
+                # print(f"pred_x_np shape after reshaping: {pred_x_np.shape}")
                 
                 # Get original trajectory and time data
                 orig_traj = trajectories[traj_idx].detach().cpu()
                 orig_time = time_points[traj_idx].detach().cpu()
-                # print(f"Debug: B-VAE: visualisation: display_random: orig_traj shape: {orig_traj.shape}")
+                # print(f"orig_traj shape: {orig_traj.shape}")
                 # Scaling factor for better visualization
                 scale_factor = 50 * 1e2 / 1e3
                 
@@ -397,8 +410,9 @@ class VAE(nn.Module):
                     axes[dim].plot(orig_time, orig_traj[:, dim] / scale_factor, 
                             '.', alpha=0.6, color=color)
                     
-                    # Plot model prediction
-                    axes[dim].plot(pred_times - 1.0, pred_x_np[:, dim] / scale_factor, 
+                    # For the model prediction, only use pred_x_np as a 1D array for all dimensions
+                    # This is a temporary fix - all dimensions show the same prediction
+                    axes[dim].plot(pred_times - 1.0, pred_x_np / scale_factor, 
                             '-', linewidth=2, alpha=0.4, color=color,
                             label='{:.1f} J$, {:.1f} V, {:.0e} s'.format(
                                 metadata[traj_idx][0], metadata[traj_idx][1], metadata[traj_idx][2]))

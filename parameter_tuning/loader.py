@@ -324,10 +324,20 @@ def compile_stacked_data(x, y, meta):
     # stack tensors along the last dimension
     obs = torch.cat((x, y), dim=-1)
     
+    # Check if obs is 2D (needs reshaping to 3D)
+    if len(obs.shape) == 2:
+        # Reshape to [1, seq_length, input_dim]
+        obs = obs.unsqueeze(0)
+    
     # Expand metadata to match sequence length
-    # meta shape: [batch_size, 4]
+    # meta shape: [batch_size, 4] or just [4]
     # Need to repeat for each time step in the sequence
     batch_size, seq_length, input_dim = obs.shape
+    
+    # Ensure meta is 2D [batch_size, meta_dim]
+    if len(meta.shape) == 1:
+        meta = meta.unsqueeze(0)
+    
     meta_dim = meta.shape[1]
     
     # Reshape meta to [batch_size, 1, meta_dim] and repeat along sequence dimension
@@ -340,7 +350,7 @@ def compile_stacked_data(x, y, meta):
     obs = torch.cat((obs, expanded_meta), dim=-1)
     
     # Add an extra dimension as required
-    
+    # print("compiled_stacked_data: obs shape: ", obs.shape)
     return obs
 
 def reverse_traj(input_tensor):
@@ -356,13 +366,13 @@ def reverse_traj(input_tensor):
     """
     # Check if the input tensor has the shape [batch_size, seq_length, input_dim]
     if len(input_tensor.shape) == 3:
-        # Reverse the sequence dimension (dim=1)
-        return torch.flip(input_tensor, dims=[0, 1])
+        # Reverse only the sequence dimension (dim=1), not the batch dimension
+        return torch.flip(input_tensor, dims=[1])
     
     # Check if the input tensor has the shape [batch_size, seq_length, 1, input_dim]
     elif len(input_tensor.shape) == 4:
-        # Reverse the sequence dimension (dim=1)
-        return torch.flip(input_tensor, dims=[0, 1])
+        # Reverse only the sequence dimension (dim=1), not the batch dimension
+        return torch.flip(input_tensor, dims=[1])
     
     else:
         raise ValueError(f"Unexpected input shape: {input_tensor.shape}. Expected shape [batch_size, seq_length, input_dim] or [batch_size, seq_length, 1, input_dim]")
