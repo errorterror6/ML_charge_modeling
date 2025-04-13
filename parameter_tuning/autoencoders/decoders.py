@@ -78,6 +78,7 @@ class RNNDecoder(DecoderBase):
             input_size=self.obs_dim,  # Previous output as input (full dimension)
             hidden_size=hidden_dim,
             nonlinearity='tanh',
+            device=m['device'],
             batch_first=True
         )
         
@@ -144,7 +145,8 @@ class LSTMDecoder(DecoderBase):
         self.lstm = nn.LSTM(
             input_size=self.obs_dim,  # Previous output as input (full dimension)
             hidden_size=hidden_dim,
-            batch_first=True
+            batch_first=True,
+            device=m['device'],
         )
         
         # Output projection

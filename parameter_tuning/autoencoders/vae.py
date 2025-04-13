@@ -102,9 +102,9 @@ class VAE(nn.Module):
             reversed_data = loader.reverse_traj(input_data)
             
             # Run model inference
-            print("input data:", reversed_data)
+            # print("input data:", reversed_data)
             reconstruction, mu, log_var, z = self.forward(reversed_data)     
-            print("reconstruction:", reconstruction)       
+            # print("reconstruction:", reconstruction)       
             print("latent z:", z)
         return reconstruction, z
         
@@ -323,6 +323,7 @@ class VAE(nn.Module):
             
             # Set up figure with subplots (one per trajectory dimension)
             num_dims = trajectories[0].shape[-1]
+            # print("num_dims:", num_dims)
             fig_width = 7
             fig_height = 4 * num_dims
             fig = plt.figure(figsize=(fig_width, fig_height))
@@ -369,14 +370,15 @@ class VAE(nn.Module):
                 # Stack along the last dimension to match the expected format for interpolate_trajectory
                 # Shape [batch_size, seq_len, 2] where each point has (traj_value, time_value)
                 interpolation_input = torch.stack([trajectory_values.squeeze().unsqueeze(dim=1), time_tensor], dim=-1)
-                
+                # print(f"interpolation_input:", interpolation_input)
                 # Convert tensors to numpy arrays before interpolation
                 interpolation_input_np = interpolation_input.detach().cpu().numpy()
                 time_1k_tensor_np = time_1k_tensor.detach().cpu().numpy()
                 
+                
                 # Run interpolation
                 interpolated_result_np = loader.interpolate_trajectory(interpolation_input_np, time_1k_tensor_np)
-                
+                # print(f"interpolation output:", interpolation_input_np)
                 # Convert back to tensor and extract first dimension
                 interpolated_result = torch.tensor(interpolated_result_np, device=device)[:, :, 0]
                 pred_x = interpolated_result
@@ -414,7 +416,7 @@ class VAE(nn.Module):
                     
                     # For the model prediction, only use pred_x_np as a 1D array for all dimensions
                     # This is a temporary fix - all dimensions show the same prediction
-                    axes[dim].plot(pred_times - 1.0, pred_x_np / scale_factor, 
+                    axes[dim].plot(time_1k_tensor_np - 1.0, pred_x_np / scale_factor, 
                             '-', linewidth=2, alpha=0.4, color=color,
                             label='{:.1f} J$, {:.1f} V, {:.0e} s'.format(
                                 metadata[traj_idx][0], metadata[traj_idx][1], metadata[traj_idx][2]))
