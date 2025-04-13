@@ -59,10 +59,11 @@ class VAE(nn.Module):
     def loss_function(self, traj, reconstruction, mu, log_var, beta=1.0):
         # During training, use all dimensions for reconstruction loss
         # Both traj and reconstruction should be [batch_size, seq_len, 6]
-        recon_loss = self.loss_fn(reconstruction, traj)
+        # TODO: revert loss to all 6 dimensions, remove the 0.1 multiplier on beta.
+        recon_loss = self.loss_fn(reconstruction[:, :, :2], traj[:, :, :2])
         KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         # return recon_loss, recon_loss, KLD
-        return recon_loss + beta * KLD, recon_loss, KLD
+        return recon_loss + 0.1* beta * KLD, recon_loss, KLD
     
     
     
@@ -74,7 +75,7 @@ class VAE(nn.Module):
         reversed_data = loader.reverse_traj(input_data)
 
         reconstruction, mu, log_var, z = self.forward(reversed_data)
-        loss, recon_loss, kl_loss = self.loss_function(reversed_data, reconstruction, mu, log_var)
+        loss, recon_loss, kl_loss = self.loss_function(input_data, reconstruction, mu, log_var)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -101,7 +102,10 @@ class VAE(nn.Module):
             reversed_data = loader.reverse_traj(input_data)
             
             # Run model inference
-            reconstruction, mu, log_var, z = self.forward(reversed_data)            
+            print("input data:", reversed_data)
+            reconstruction, mu, log_var, z = self.forward(reversed_data)     
+            print("reconstruction:", reconstruction)       
+            print("latent z:", z)
         return reconstruction, z
         
     
@@ -341,7 +345,7 @@ class VAE(nn.Module):
             
             # Iterate over selected trajectories
             loss_list = []
-            for idx, traj_idx in enumerate(sample_indices):
+            for idx, traj_idx in enumerate(sample_indices[2:3]):
                 # Get color for this trajectory
                 color = color_map.to_rgba(idx)
                 
@@ -356,9 +360,7 @@ class VAE(nn.Module):
                 time_1k_tensor = torch.Tensor(pred_times).to(device)
 
                 # Run model inference
-                print("input_tensor:", input_tensor)
                 pred_x, pred_z = self.model.infer_step(input_tensor)
-                print("pred_x:", pred_x)
                 
                 # Extract trajectory and combine with time for interpolation
                 batch_size, seq_len, obs_dim = pred_x.shape
