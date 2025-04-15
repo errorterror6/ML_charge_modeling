@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # ML Charge Modeling Project Guide
 
 ## Project Overview
@@ -5,6 +9,7 @@ This project provides tools for modeling and analyzing charge extraction dynamic
 - Beta-Variational Autoencoder (B-VAE)
 - Recurrent Neural Network (RNN)
 - Long Short-Term Memory (LSTM)
+- Autoencoder variants (MLP-VAE, RNN-VAE, LSTM-VAE)
 
 ## Environment Setup
 
@@ -59,6 +64,9 @@ When running the parameter tuning process, you'll be prompted to:
    - B-VAE (Beta-Variational Autoencoder)
    - RNN (Recurrent Neural Network)
    - LSTM (Long Short-Term Memory)
+   - MLP-VAE (Multi-Layer Perceptron VAE)
+   - RNN-VAE (Recurrent Neural Network VAE)
+   - LSTM-VAE (Long Short-Term Memory VAE)
 
 ### Jupyter Notebooks
 Exploratory data analysis and visualization notebooks are in the `/nbks` directory:
@@ -115,6 +123,9 @@ export CUDA_VISIBLE_DEVICES=-1
 - If you encounter import errors when running parameter tuning, make sure you're running from the parameter_tuning directory
 - For CUDA issues, verify installation with `torch.cuda.is_available()`
 - Memory errors might require reducing batch size in `parameters.py`
+- For data shape issues, add debug prints of tensor shapes before and after transformations
+- When working with autoencoders, ensure data dimensions match model expectations (especially in compile_stacked_data)
+- For autoencoder evaluation, note that eval_loss_fn only uses the first 2 dimensions of feature vectors
 
 ## Code Style Guidelines
 - 4-space indentation
@@ -126,3 +137,6 @@ export CUDA_VISIBLE_DEVICES=-1
 - Section headers with triple quotes (''' SECTION NAME ''')
 - Comprehensive error handling with appropriate logging
 - Keep functions focused and under 50 lines when possible
+- Log messages should be prefixed with "logs: [module]: [function]:" for consistency
+- Expected tensor shapes should be documented in comments
+- Data processing functions should validate input shapes and types
