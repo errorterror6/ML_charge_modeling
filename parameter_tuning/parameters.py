@@ -64,7 +64,7 @@ model_params = {
 
     'latent_dim': 16,
     #NOTE: reccomended to decrease this to 1e-5 or similar for training
-    'lr':1e-3,
+    'lr':1e-4,
     'n_batch': 16,  #batch size
     'beta': 0.1,
 
@@ -104,8 +104,8 @@ model_params = {
 
 vae_params = {
     #rnn properties
-    'rnn_nhidden': 1024,
-    'input_size': 6,
+    'rnn_nhidden': 2048,
+    'input_size': 2,
     
 }
 

@@ -328,7 +328,7 @@ def compile_stacked_data(x, y, meta):
     if len(obs.shape) == 2:
         # Reshape to [1, seq_length, input_dim]
         obs = obs.unsqueeze(0)
-    
+    return obs
     # Expand metadata to match sequence length
     # meta shape: [batch_size, 4] or just [4]
     # Need to repeat for each time step in the sequence
@@ -339,7 +339,9 @@ def compile_stacked_data(x, y, meta):
         meta = meta.unsqueeze(0)
     
     meta_dim = meta.shape[1]
-    
+    meta_copy = meta.clone()
+    meta_copy[:,2] = meta_copy[:,2] * 1e4
+    meta_copy[:,3] = meta_copy[:,3] / 1e2
     # Reshape meta to [batch_size, 1, meta_dim] and repeat along sequence dimension
     expanded_meta = meta.unsqueeze(1).expand(batch_size, seq_length, meta_dim)
     
@@ -354,6 +356,7 @@ def compile_stacked_data(x, y, meta):
     return obs
 
 def reverse_traj(input_tensor):
+    return input_tensor
     """
     Reverses the sequence dimension of the input tensor.
     

@@ -102,9 +102,9 @@ class VAE(nn.Module):
             reversed_data = loader.reverse_traj(input_data)
             
             # Run model inference
-            # print("input data:", reversed_data)
+            print("input data:", reversed_data)
             reconstruction, mu, log_var, z = self.forward(reversed_data)     
-            # print("reconstruction:", reconstruction)       
+            print("reconstruction:", reconstruction)       
             print("latent z:", z)
         return reconstruction, z
         
@@ -365,6 +365,7 @@ class VAE(nn.Module):
                 
                 # Extract trajectory and combine with time for interpolation
                 batch_size, seq_len, obs_dim = pred_x.shape
+                
                 # We still focus on the first dimension (x) for visualization
                 trajectory_values = pred_x[:, :, 0]  # Get first dimension of reconstruction
                 # Stack along the last dimension to match the expected format for interpolate_trajectory
