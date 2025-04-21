@@ -35,6 +35,7 @@ class VAE(nn.Module):
             lr=parameters.model_params['lr']
         )
         self.visualiser = self.Visualiser(self)
+        self.counter = 0
     
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
@@ -103,9 +104,14 @@ class VAE(nn.Module):
             reversed_data = loader.reverse_traj(input_data)
             
             # Run model inference
-            print("input data:", reversed_data)
-            reconstruction, mu, log_var, z = self.forward(reversed_data)     
-            print("reconstruction:", reconstruction)       
+            
+            reconstruction, mu, log_var, z = self.forward(reversed_data)  
+            if self.counter == 0:
+                print("input data:", reversed_data)   
+                print("reconstruction:", reconstruction) 
+                self.counter += 1
+            if self.counter == 10:
+                self.counter = 0
             # print("latent z:", z)
         return reconstruction, z, self.eval_loss_fn(input_data, reconstruction)
         
@@ -278,7 +284,7 @@ class VAE(nn.Module):
             visualisation.plot_training_loss(model_params, save=save, split=split, plot_total=plot_total, plot_MSE=False, plot_KL=False)
             # visualisation.plot_training_loss(model_params, save=save, split=True, plot_total=False, plot_MSE=plot_MSE, plot_KL=plot_KL)
 
-        def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=False, save=True, random_samples=True):
+        def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=False, save=True, random_samples=True, test=True):
             """
             Display model fit on random samples from the dataset.
             
@@ -360,6 +366,7 @@ class VAE(nn.Module):
                 traj_tensor = train_trajs[traj_idx].to(device)
                 time_tensor = train_times[traj_idx].to(device)
                 meta_tensor = metadata[traj_idx].to(device)
+                
                 input_tensor = loader.compile_stacked_data(traj_tensor, time_tensor, meta_tensor)
                 
                 # Create time points for prediction (denser than original data)
@@ -369,7 +376,12 @@ class VAE(nn.Module):
                 # Run model inference
                 pred_x, pred_z, loss = self.model.infer_step(input_tensor)
                 loss_list.append(loss.detach().cpu().numpy())
-                pred_x = self.model.format_output(pred_x[:,:,0:1])
+                if test:
+                    pred_x = loader.interpolate_traj(pred_x, time_1k_tensor)
+                    
+                    
+                else:
+                    pred_x = self.model.format_output(pred_x[:,:,0:1])
                 pred_x = pred_x.detach().cpu().numpy()[0]
                 _traj = trajs[traj_idx].detach().cpu()
                 _t = times[traj_idx].detach().cpu()

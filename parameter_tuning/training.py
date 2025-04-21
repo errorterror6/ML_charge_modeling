@@ -211,7 +211,7 @@ def autoencoder_training_loop(n_epochs, model_params=parameters.model_params, da
             )
             
             # Get evaluation loss
-            _, _, batch_eval_loss = vae_model.infer_step(orig_data)
+            batch_eval_loss, _ = vae_model.eval_step(orig_data)
             loss_list.append(batch_eval_loss.item())
         
         # Calculate average evaluation loss
