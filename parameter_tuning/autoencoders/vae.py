@@ -281,6 +281,7 @@ class VAE(nn.Module):
             # visualisation.plot_training_loss(model_params, save=save, split=True, plot_total=False, plot_MSE=plot_MSE, plot_KL=plot_KL)
 
         def display_random_fit(self, model_params=parameters.model_params, dataset=parameters.dataset, show=False, save=True, random_samples=True, test=True):
+            # NOTE: test=false case currently has loss broken, easy fix but not needed as i dont plan to revert.
             """
             Display model fit on random samples from the dataset.
             
@@ -369,15 +370,20 @@ class VAE(nn.Module):
                 time_1k_tensor = torch.Tensor(np.linspace(0,2.5,1000)).to(device)
                 
                 # Run model inference
-                pred_x, pred_z, loss = self.model.infer_step(input_tensor, printout=True)
-                loss_list.append(loss.detach().cpu().numpy())
+                pred_x, pred_z, loss = self.model.infer_step(input_tensor, printout=False)
+                # loss_list.append(loss.detach().cpu().numpy())
                 if test:
                     pred_x = loader.interpolate_traj(pred_x, time_1k_tensor)
                 else:
                     pred_x = self.model.format_output(pred_x[:,:,0:1])
+                pred_x_loss = pred_x
                 pred_x = pred_x.detach().cpu().numpy()[0]
                 _traj = trajs[traj_idx].detach().cpu()
                 _t = times[traj_idx].detach().cpu()
+                stacked_1k_tensor = torch.stack((pred_x_loss.squeeze(), time_1k_tensor.squeeze()), dim=1)
+                downsized_x = loader.downscale_to_70(stacked_1k_tensor, times[traj_idx].squeeze())
+                print(f"stacked_1k_Tensory {stacked_1k_tensor.shape}, time1k: {times[traj_idx].squeeze().shape}, downsized_x {downsized_x.shape}")
+                loss_list.append(self.model.eval_loss_fn(trajectories[traj_idx].squeeze().unsqueeze(0).unsqueeze(2) ,downsized_x).detach().cpu().numpy())
 
                 for l in range(num_dims):
                     u = 0

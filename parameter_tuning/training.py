@@ -210,9 +210,21 @@ def autoencoder_training_loop(n_epochs, model_params=parameters.model_params, da
                 dataset['y'][i:i+1]
             )
             
+            test_data = loader.compile_stacked_data(
+                dataset['train_trajs'][i:i+1], 
+                dataset['train_times'][i:i+1], 
+                dataset['y'][i:i+1]
+            )
+            
             # Get evaluation loss
-            batch_eval_loss, _ = vae_model.eval_step(orig_data)
-            loss_list.append(batch_eval_loss.item())
+            device = model_params['device']
+            pred_x, _, batch_eval_loss = vae_model.infer_step(test_data)
+            time_1k_tensor = torch.Tensor(np.linspace(0,2.5,1000)).to(device)
+            pred_x = loader.interpolate_traj(pred_x, time_1k_tensor)
+            pred_x_loss = pred_x
+            stacked_1k_tensor = torch.stack((pred_x_loss.squeeze(), time_1k_tensor.squeeze()), dim=1)
+            downsized_x = loader.downscale_to_70(stacked_1k_tensor, dataset['times'][i:i+1].squeeze())
+            loss_list.append(parameters.model.eval_loss_fn(dataset['trajs'][i:i+1].squeeze().unsqueeze(0).unsqueeze(2) ,downsized_x).detach().cpu().numpy())
         
         # Calculate average evaluation loss
         eval_loss = np.mean(loss_list)

@@ -380,7 +380,39 @@ def reverse_traj(input_tensor):
     
     else:
         raise ValueError(f"Unexpected input shape: {input_tensor.shape}. Expected shape [batch_size, seq_length, input_dim] or [batch_size, seq_length, 1, input_dim]")
-    
+
+def downscale_to_70(input_tensor: torch.Tensor, new_time: torch.Tensor) -> torch.Tensor:
+    """
+    K‑nearest‐neighbour average (k=4) sampling of a 1D trajectory onto new timesteps.
+
+    Args:
+        input_tensor: Tensor of shape (N, 2), where
+            input_tensor[:, 0] = trajectory values,
+            input_tensor[:, 1] = original timestamps.
+        new_time:     Tensor of shape (M,) containing target timestamps.
+
+    Returns:
+        Tensor of shape (1, M, 1) containing, for each new_time[i],
+        the average of the 10 trajectory values whose original timestamps
+        are closest to new_time[i].
+    """
+    traj  = input_tensor[:, 0]
+    times = input_tensor[:, 1]
+    new_time = new_time.to(times)
+
+    # Compute |new_time_i - times_j| matrix: shape (M, N)
+    diffs = torch.abs(new_time.unsqueeze(1) - times.unsqueeze(0))  # (M, N)
+
+    # For each of the M rows, get the indices of the 4 smallest diffs
+    # topk with largest=False gives the k smallest elements
+    nearest_idx = torch.topk(diffs, k=4, largest=False).indices  # (M, 10)
+
+    # Gather those trajectory values and average along the 10 neighbours
+    neigh_vals = traj[nearest_idx]       # (M, 10)
+    avg_vals   = neigh_vals.mean(dim=1)  # (M,)
+
+    # Reshape to (1, M, 1)
+    return avg_vals.unsqueeze(0).unsqueeze(2)
 
 def interpolate_traj(
     input_tensor: torch.Tensor,
@@ -473,7 +505,7 @@ def interpolate_traj(
     # ---- 6. Reshape & return ----------------------------------------------------
     
     # print first 100
-    print(f"interp: {interp.squeeze()[0:100]}")
+    # print(f"interp: {interp.squeeze()[0:100]}")
     return interp.unsqueeze(0).unsqueeze(-1)
 
 def save_model_params(model_params=parameters.model_params):
