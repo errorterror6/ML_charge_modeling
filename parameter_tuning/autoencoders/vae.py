@@ -35,7 +35,6 @@ class VAE(nn.Module):
             lr=parameters.model_params['lr']
         )
         self.visualiser = self.Visualiser(self)
-        self.counter = 0
     
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
@@ -84,7 +83,7 @@ class VAE(nn.Module):
     
         return loss, recon_loss, kl_loss
     
-    def infer_step(self, input_data):
+    def infer_step(self, input_data, printout=False):
         """
         Perform inference step from a trajectory.
         
@@ -106,12 +105,9 @@ class VAE(nn.Module):
             # Run model inference
             
             reconstruction, mu, log_var, z = self.forward(reversed_data)  
-            if self.counter == 0:
+            if printout:
                 print("input data:", reversed_data)   
                 print("reconstruction:", reconstruction) 
-                self.counter += 1
-            if self.counter == 10:
-                self.counter = 0
             # print("latent z:", z)
         return reconstruction, z, self.eval_loss_fn(input_data, reconstruction)
         
@@ -371,15 +367,13 @@ class VAE(nn.Module):
                 
                 # Create time points for prediction (denser than original data)
                 pred_times = np.linspace(0, 2.5, 1000) + 1  # +1 accounts for time bias
-                time_1k_tensor = torch.Tensor(pred_times).to(device)
-
+                time_1k_tensor = torch.Tensor(np.linspace(0,2.5,1000)).to(device)
+                
                 # Run model inference
-                pred_x, pred_z, loss = self.model.infer_step(input_tensor)
+                pred_x, pred_z, loss = self.model.infer_step(input_tensor, printout=True)
                 loss_list.append(loss.detach().cpu().numpy())
                 if test:
                     pred_x = loader.interpolate_traj(pred_x, time_1k_tensor)
-                    
-                    
                 else:
                     pred_x = self.model.format_output(pred_x[:,:,0:1])
                 pred_x = pred_x.detach().cpu().numpy()[0]

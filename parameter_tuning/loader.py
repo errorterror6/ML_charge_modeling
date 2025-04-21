@@ -380,47 +380,101 @@ def reverse_traj(input_tensor):
     else:
         raise ValueError(f"Unexpected input shape: {input_tensor.shape}. Expected shape [batch_size, seq_length, input_dim] or [batch_size, seq_length, 1, input_dim]")
     
-def interpolate_traj(input_tensor: torch.Tensor, new_time: torch.Tensor) -> torch.Tensor:
+import torch
+from typing import Literal, Optional
+
+def interpolate_traj(
+    input_tensor: torch.Tensor,
+    new_time:    torch.Tensor,
+    *,
+    extrap: Literal["hold", "linear", "nan"] = "hold",
+    allow_neg_times: bool = False,
+    time_col: int = 1,
+    traj_col: int = 0,
+) -> torch.Tensor:
     """
-    Linearly interpolate a trajectory onto new time points.
+    Robust 1‑D linear interpolation of a trajectory onto arbitrary time points.
 
     Parameters
     ----------
-    input_tensor : torch.Tensor
-        Shape [1, N, 2]  (N ≤ 70).  last dim = [trajectory, time_stamp].
-    new_time : torch.Tensor
-        1‑D tensor of target times (e.g. 1000 values produced with np.linspace
-        and then converted to torch).  May live on any device.
+    input_tensor : Tensor[1, N, 2]
+        Raw model output: one batch, ≤ 70 samples.
+        `traj_col` and `time_col` select which column is which.
+    new_time : Tensor[M]
+        Target time stamps (e.g. from np.linspace then torch.Tensor).
+    extrap : {"hold", "linear", "nan"}, default "hold"
+        Behaviour outside the observed time range:
+        ─ "hold"   → nearest value (flat)          ── safest for most ML use‑cases
+        ─ "linear" → straight‑line extrapolation
+        ─ "nan"    → fill with NaN
+    allow_neg_times : bool
+        If False (default) negative time stamps in the *input* are discarded.
+    time_col, traj_col : int
+        Use these to swap columns if your data layout is [time, traj].
 
     Returns
     -------
-    torch.Tensor
-        Shape [1, len(new_time), 1] – interpolated trajectory values.
+    Tensor[1, M, 1]
+        Interpolated trajectory on the same device as `new_time`.
     """
-    # Split and flatten to 1‑D
-    traj = input_tensor[0, :, 0]          # [N]
-    t     = input_tensor[0, :, 1]          # [N]
+    # ---- 0. Shape / dtype checks ------------------------------------------------
+    if input_tensor.ndim != 3 or input_tensor.shape[0] != 1 or input_tensor.shape[-1] != 2:
+        raise ValueError("input_tensor must have shape [1, N, 2]")
 
-    # Ensure chronological order
-    order = torch.argsort(t)
-    t, traj = t[order], traj[order]
+    device = new_time.device
+    traj   = input_tensor[0, :, traj_col].to(device)
+    t_raw  = input_tensor[0, :, time_col].to(device)
 
-    # Find the insertion positions of each new_time point
-    idx_upper = torch.searchsorted(t, new_time, right=True)          # [M]
+    # ---- 1. Sanity filtering ----------------------------------------------------
+    valid_mask = torch.isfinite(traj) & torch.isfinite(t_raw)
+    if not allow_neg_times:
+        valid_mask &= (t_raw >= 0)
+    traj, t = traj[valid_mask], t_raw[valid_mask]
+
+    if len(t) < 2:
+        raise ValueError("Need at least two valid timestamps for interpolation")
+
+    # ---- 2. Sort by time, drop duplicate stamps ---------------------------------
+    sort_idx = torch.argsort(t)
+    t, traj = t[sort_idx], traj[sort_idx]
+
+    # keep first occurrence of each time stamp
+    keep = torch.ones_like(t, dtype=torch.bool)
+    keep[1:] = t[1:] != t[:-1]
+    t, traj = t[keep], traj[keep]
+
+    # ---- 3. Prepare indices for interpolation / extrapolation -------------------
+    idx_upper = torch.searchsorted(t, new_time, right=True)
     idx_lower = torch.clamp(idx_upper - 1, 0, len(t) - 1)
 
-    # Gather neighbouring sample pairs
-    t0, t1       = t[idx_lower],  t[torch.clamp(idx_upper, 0, len(t) - 1)]
+    t0, t1       = t[idx_lower], t[torch.clamp(idx_upper, 0, len(t) - 1)]
     traj0, traj1 = traj[idx_lower], traj[torch.clamp(idx_upper, 0, len(t) - 1)]
 
-    # Linear weights (avoid /0 when t0==t1, which happens outside the data range)
-    denom  = torch.where(t1 == t0, torch.ones_like(t1), t1 - t0)
-    weight = (new_time - t0) / denom
+    # ---- 4. Weights & interpolation --------------------------------------------
+    same = (t1 == t0)
+    denom = torch.where(same, torch.ones_like(t1), t1 - t0)
+    w = (new_time - t0) / denom
+    interp = traj0 + w * (traj1 - traj0)
 
-    # Interpolate
-    interp = traj0 + weight * (traj1 - traj0)                        # [M]
+    # ---- 5. Extrapolation policy ------------------------------------------------
+    left_of_range  = new_time < t[0]
+    right_of_range = new_time > t[-1]
 
-    # Shape to [1, M, 1] and return on same device as new_time
+    if extrap == "hold":
+        interp[left_of_range]  = traj[0]
+        interp[right_of_range] = traj[-1]
+    elif extrap == "nan":
+        interp[left_of_range | right_of_range] = torch.nan
+    elif extrap == "linear":
+        # already linear because idx_lower / idx_upper are clamped past ends
+        pass
+    else:
+        raise ValueError(f"Unknown extrap option '{extrap}'")
+
+    # ---- 6. Reshape & return ----------------------------------------------------
+    
+    # print first 100
+    print(f"interp: {interp.squeeze()[0:100]}")
     return interp.unsqueeze(0).unsqueeze(-1)
 
 def save_model_params(model_params=parameters.model_params):
