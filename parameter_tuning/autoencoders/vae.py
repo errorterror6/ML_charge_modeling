@@ -64,7 +64,7 @@ class VAE(nn.Module):
         KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         # return recon_loss, recon_loss, KLD
         # print(f"recon loss: {recon_loss}")
-        return recon_loss + 0.1* beta * KLD, recon_loss, KLD
+        return recon_loss + beta * KLD, recon_loss, KLD
     
     
     
@@ -181,8 +181,8 @@ class VAE(nn.Module):
                 kl_loss_history.append(kl_loss)
                 eval_loss_history.append(eval_loss)
                 
-                print(f"Epoch {epoch}: Eval Loss {eval_loss:.3f}, "
-                    f"KL Loss {kl_loss:.2f}, Feature Loss {recon_loss:.2f}, Total Loss {total_loss:.2f}")
+                # print(f"Epoch {epoch}: Eval Loss {eval_loss:.3f}, "
+                #     f"KL Loss {kl_loss:.2f}, Feature Loss {recon_loss:.2f}, Total Loss {total_loss:.2f}")
                 
                     
             except KeyboardInterrupt:
@@ -382,7 +382,7 @@ class VAE(nn.Module):
                 _t = times[traj_idx].detach().cpu()
                 stacked_1k_tensor = torch.stack((pred_x_loss.squeeze(), time_1k_tensor.squeeze()), dim=1)
                 downsized_x = loader.downscale_to_70(stacked_1k_tensor, times[traj_idx].squeeze())
-                print(f"stacked_1k_Tensory {stacked_1k_tensor.shape}, time1k: {times[traj_idx].squeeze().shape}, downsized_x {downsized_x.shape}")
+                # print(f"stacked_1k_Tensory {stacked_1k_tensor.shape}, time1k: {times[traj_idx].squeeze().shape}, downsized_x {downsized_x.shape}")
                 loss_list.append(self.model.eval_loss_fn(trajectories[traj_idx].squeeze().unsqueeze(0).unsqueeze(2) ,downsized_x).detach().cpu().numpy())
 
                 for l in range(num_dims):

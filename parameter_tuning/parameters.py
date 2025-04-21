@@ -64,9 +64,9 @@ model_params = {
 
     'latent_dim': 16,
     #NOTE: reccomended to decrease this to 1e-5 or similar for training
-    'lr':5e-5,
+    'lr':5e-4,
     'n_batch': 16,  #batch size
-    'beta': 0.1,
+    'beta': 1,
 
     'optim': None,
     'device': None,
@@ -77,8 +77,8 @@ model_params = {
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
     # NOTE: due a bug, total_epochs_Train must be greater than 14.
-    'total_epochs_train': 20,
-    'epochs_per_train': 10,
+    'total_epochs_train': 500,
+    'epochs_per_train': 100,
     'epochs': 0, # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 0.00001,
