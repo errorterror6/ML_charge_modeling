@@ -60,9 +60,10 @@ class VAE(nn.Module):
         # During training, use all dimensions for reconstruction loss
         # Both traj and reconstruction should be [batch_size, seq_len, 6]
         # TODO: revert loss to all 6 dimensions, remove the 0.1 multiplier on beta.
-        recon_loss = self.loss_fn(reconstruction[:, :, :2], traj[:, :, :2])
+        recon_loss = self.loss_fn(reconstruction[:, :, 0:1], traj[:, :, 0:1])
         KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         # return recon_loss, recon_loss, KLD
+        # print(f"recon loss: {recon_loss}")
         return recon_loss + 0.1* beta * KLD, recon_loss, KLD
     
     
@@ -102,11 +103,11 @@ class VAE(nn.Module):
             reversed_data = loader.reverse_traj(input_data)
             
             # Run model inference
-            print("input data:", reversed_data)
+            # print("input data:", reversed_data)
             reconstruction, mu, log_var, z = self.forward(reversed_data)     
-            print("reconstruction:", reconstruction)       
-            print("latent z:", z)
-        return reconstruction, z
+            # print("reconstruction:", reconstruction)       
+            # print("latent z:", z)
+        return reconstruction, z, self.eval_loss_fn(input_data, reconstruction)
         
     
     def eval_loss_fn(self, traj, reconstruction):
@@ -125,8 +126,8 @@ class VAE(nn.Module):
         with torch.no_grad():
             reversed_data = loader.reverse_traj(input_data)
             reconstruction, mu, log_var, z = self.forward(reversed_data)
-            total_loss, feat_loss, kl_loss = self.loss_function(reversed_data, reconstruction, mu, log_var)
-            eval_loss = self.eval_loss_fn(reversed_data, reconstruction) 
+            total_loss, feat_loss, kl_loss = self.loss_function(input_data, reconstruction, mu, log_var)
+            eval_loss = self.eval_loss_fn(input_data, reconstruction) 
                   
         return eval_loss, (total_loss, feat_loss, kl_loss)
              
@@ -185,6 +186,9 @@ class VAE(nn.Module):
             except KeyboardInterrupt:
                 print("logs: vae: train_nepochs: Training interrupted by keyboard.")
                 exit(1)
+            
+            #do a final evaluation over 150 datapoints
+            
         return n_epochs, eval_loss_history, (total_loss_history, recon_loss_history, kl_loss_history)
 
     def format_output(self, pred_x, target_timesteps=1000):
@@ -308,7 +312,8 @@ class VAE(nn.Module):
             
             train_trajs = dataset['train_trajs']  # Trajectories with missing data points
             train_times = dataset['train_times']  # Time points with missing data points
-            
+            trajs = dataset['trajs']
+            times = dataset['times']
 
             # print(f"Debug: B-VAE: visualisation: display_random: trajectories shape: {trajectories.shape}")
             # print(f"Debug: B-VAE: visualisation: display_random: time_points shape: {time_points.shape}")
@@ -320,6 +325,7 @@ class VAE(nn.Module):
             optimizer = model_params['optim']
             device = model_params['device']
             epoch_num = model_params['epochs']
+            epoch = model_params['epochs']
             
             # Set up figure with subplots (one per trajectory dimension)
             num_dims = trajectories[0].shape[-1]
@@ -346,7 +352,7 @@ class VAE(nn.Module):
             
             # Iterate over selected trajectories
             loss_list = []
-            for idx, traj_idx in enumerate(sample_indices[2:3]):
+            for idx, traj_idx in enumerate(sample_indices):
                 # Get color for this trajectory
                 color = color_map.to_rgba(idx)
                 
@@ -361,82 +367,127 @@ class VAE(nn.Module):
                 time_1k_tensor = torch.Tensor(pred_times).to(device)
 
                 # Run model inference
-                pred_x, pred_z = self.model.infer_step(input_tensor)
-                
-                # Extract trajectory and combine with time for interpolation
-                batch_size, seq_len, obs_dim = pred_x.shape
-                
-                # We still focus on the first dimension (x) for visualization
-                trajectory_values = pred_x[:, :, 0]  # Get first dimension of reconstruction
-                # Stack along the last dimension to match the expected format for interpolate_trajectory
-                # Shape [batch_size, seq_len, 2] where each point has (traj_value, time_value)
-                interpolation_input = torch.stack([trajectory_values.squeeze().unsqueeze(dim=1), time_tensor], dim=-1)
-                # print(f"interpolation_input:", interpolation_input)
-                # Convert tensors to numpy arrays before interpolation
-                interpolation_input_np = interpolation_input.detach().cpu().numpy()
-                time_1k_tensor_np = time_1k_tensor.detach().cpu().numpy()
-                
-                
-                # Run interpolation
-                interpolated_result_np = loader.interpolate_trajectory(interpolation_input_np, time_1k_tensor_np)
-                # print(f"interpolation output:", interpolation_input_np)
-                # Convert back to tensor and extract first dimension
-                interpolated_result = torch.tensor(interpolated_result_np, device=device)[:, :, 0]
-                pred_x = interpolated_result
-                
-                #Run model inference for loss reasons only
-                loss_x, _ = self.model.eval_step(input_tensor)
-                
-                loss_list.append(loss_x.item())
-                # print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
+                pred_x, pred_z, loss = self.model.infer_step(input_tensor)
+                loss_list.append(loss.detach().cpu().numpy())
+                pred_x = self.model.format_output(pred_x[:,:,0:1])
+                pred_x = pred_x.detach().cpu().numpy()[0]
+                _traj = trajs[traj_idx].detach().cpu()
+                _t = times[traj_idx].detach().cpu()
 
-                # Convert prediction to numpy for plotting
-                # print(f"pred_x shape: {pred_x.shape}")
-                # pred_x shape here is [1, 1000]
-                pred_x_np = pred_x.detach().cpu().numpy()
-                # print(f"pred_x_np shape before indexing: {pred_x_np.shape}")
-                
-                # Remove batch dimension if it exists
-                if len(pred_x_np.shape) > 1 and pred_x_np.shape[0] == 1:
-                    pred_x_np = pred_x_np.reshape(pred_x_np.shape[1])
-                
-                # print(f"pred_x_np shape after reshaping: {pred_x_np.shape}")
-                
-                # Get original trajectory and time data
-                orig_traj = trajectories[traj_idx].detach().cpu()
-                orig_time = time_points[traj_idx].detach().cpu()
-                # print(f"orig_traj shape: {orig_traj.shape}")
-                # Scaling factor for better visualization
-                scale_factor = 50 * 1e2 / 1e3
-                
-                # Plot each dimension
-                for dim in range(num_dims):
-                    # Plot original trajectory points
-                    axes[dim].plot(orig_time, orig_traj[:, dim] / scale_factor, 
-                            '.', alpha=0.6, color=color)
+                for l in range(num_dims):
+                    u = 0
                     
-                    # For the model prediction, only use pred_x_np as a 1D array for all dimensions
-                    # This is a temporary fix - all dimensions show the same prediction
-                    axes[dim].plot(time_1k_tensor_np - 1.0, pred_x_np / scale_factor, 
-                            '-', linewidth=2, alpha=0.4, color=color,
-                            label='{:.1f} J$, {:.1f} V, {:.0e} s'.format(
-                                metadata[traj_idx][0], metadata[traj_idx][1], metadata[traj_idx][2]))
+                    # ax[k].set_ylim(-.8, .8)
+                    sc_ = 50*1e2/1e3
                     
-            # Add labels and title
+                    # plot original and predicted trajectories
+                    axes[l].plot(_t, _traj[:, l+u]/sc_, '.', alpha = 0.6, color = color)
+                    axes[l].plot(pred_times - 1.0, pred_x[:, l+u]/sc_, '-', label = '{:.1f} J$, {:.1f} V, {:.0e} s'.format(metadata[traj_idx][0], metadata[traj_idx][1], metadata[traj_idx][2]),
+                            linewidth = 2, alpha = 0.4, color = color)
+
+            mean_loss = np.mean(loss_list)
             plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
             plt.ylabel('Charge [mA]')
-            plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}, loss: {:.1e}'.format(
-                epoch_num, model_params['lr'], model_params['beta'], np.mean([l for l in loss_list])))
+            # tile includes epoch number, learning rate atnd beta
+            plt.title('Epoch: {}, lr: {:.1e}, loss: {:.1e}'.format(epoch, model_params['lr'], mean_loss))
 
-            # Add legend
+            # plt.xscale('log')
             plt.legend(loc='upper right', title='Intensity, Bias, Delay')
+
             plt.tight_layout()
 
-            # Show or save the figure
             if show:
                 plt.show()
             if save:
-                save_dir = model_params['folder']
-                if not os.path.exists(save_dir):
-                    os.makedirs(save_dir)
-                fig.savefig(f"{save_dir}/training_epoch_{epoch_num:04d}.png", dpi=300)
+                # save as a png]
+                # todo: change
+                folder = model_params['folder']
+                # if saves folder does not exist create it
+                if not os.path.exists(folder):
+                    os.makedirs(folder)
+                fig.savefig(f"{folder}/training_epoch_{epoch:04d}.png", dpi=300)
+                
+            plt.close('all')
+
+                
+                
+            return
+                
+            #     # Extract trajectory and combine with time for interpolation
+            #     batch_size, seq_len, obs_dim = pred_x.shape
+                
+            #     # We still focus on the first dimension (x) for visualization
+            #     trajectory_values = pred_x[:, :, 0]  # Get first dimension of reconstruction
+            #     # Stack along the last dimension to match the expected format for interpolate_trajectory
+            #     # Shape [batch_size, seq_len, 2] where each point has (traj_value, time_value)
+            #     interpolation_input = torch.stack([trajectory_values.squeeze().unsqueeze(dim=1), time_tensor], dim=-1)
+            #     # print(f"interpolation_input:", interpolation_input)
+            #     # Convert tensors to numpy arrays before interpolation
+            #     interpolation_input_np = interpolation_input.detach().cpu().numpy()
+            #     time_1k_tensor_np = time_1k_tensor.detach().cpu().numpy()
+                
+                
+                
+            #     # Run interpolation
+            #     interpolated_result_np = loader.interpolate_trajectory(interpolation_input_np, time_1k_tensor_np)
+            #     # print(f"interpolation output:", interpolation_input_np)
+            #     # Convert back to tensor and extract first dimension
+            #     interpolated_result = torch.tensor(interpolated_result_np, device=device)[:, :, 0]
+            #     pred_x = interpolated_result
+                
+            #     #Run model inference for loss reasons only
+            #     loss_x, _ = self.model.eval_step(input_tensor)
+                
+            #     loss_list.append(loss_x.item())
+            #     # print(f"Debug: B-VAE: visualisation: display_random: pred_x shape: {pred_x.shape}")
+
+            #     # Convert prediction to numpy for plotting
+            #     # print(f"pred_x shape: {pred_x.shape}")
+            #     # pred_x shape here is [1, 1000]
+            #     pred_x_np = pred_x.detach().cpu().numpy()
+            #     # print(f"pred_x_np shape before indexing: {pred_x_np.shape}")
+                
+            #     # Remove batch dimension if it exists
+            #     if len(pred_x_np.shape) > 1 and pred_x_np.shape[0] == 1:
+            #         pred_x_np = pred_x_np.reshape(pred_x_np.shape[1])
+                
+            #     # print(f"pred_x_np shape after reshaping: {pred_x_np.shape}")
+                
+            #     # Get original trajectory and time data
+            #     orig_traj = trajectories[traj_idx].detach().cpu()
+            #     orig_time = time_points[traj_idx].detach().cpu()
+            #     # print(f"orig_traj shape: {orig_traj.shape}")
+            #     # Scaling factor for better visualization
+            #     scale_factor = 50 * 1e2 / 1e3
+                
+            #     # Plot each dimension
+            #     for dim in range(num_dims):
+            #         # Plot original trajectory points
+            #         axes[dim].plot(orig_time, orig_traj[:, dim] / scale_factor, 
+            #                 '.', alpha=0.6, color=color)
+                    
+            #         # For the model prediction, only use pred_x_np as a 1D array for all dimensions
+            #         # This is a temporary fix - all dimensions show the same prediction
+            #         axes[dim].plot(time_1k_tensor_np - 1.0, pred_x_np / scale_factor, 
+            #                 '-', linewidth=2, alpha=0.4, color=color,
+            #                 label='{:.1f} J$, {:.1f} V, {:.0e} s'.format(
+            #                     metadata[traj_idx][0], metadata[traj_idx][1], metadata[traj_idx][2]))
+                    
+            # # Add labels and title
+            # plt.xlabel('Time [10$^{-7}$ + -log$_{10}(t)$ s]')
+            # plt.ylabel('Charge [mA]')
+            # plt.title('Epoch: {}, lr: {:.1e}, beta: {:.1e}, loss: {:.1e}'.format(
+            #     epoch_num, model_params['lr'], model_params['beta'], np.mean([l for l in loss_list])))
+
+            # # Add legend
+            # plt.legend(loc='upper right', title='Intensity, Bias, Delay')
+            # plt.tight_layout()
+
+            # # Show or save the figure
+            # if show:
+            #     plt.show()
+            # if save:
+            #     save_dir = model_params['folder']
+            #     if not os.path.exists(save_dir):
+            #         os.makedirs(save_dir)
+            #     fig.savefig(f"{save_dir}/training_epoch_{epoch_num:04d}.png", dpi=300)

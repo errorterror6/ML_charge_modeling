@@ -195,28 +195,28 @@ def autoencoder_training_loop(n_epochs, model_params=parameters.model_params, da
     # Evaluate on original dataset
     with torch.no_grad():
         # Get the original dataset in smaller batches to avoid memory issues
-        batch_size = model_params['n_batch']
-        total_batches = dataset['trajs'].size(0) // batch_size + (1 if dataset['trajs'].size(0) % batch_size != 0 else 0)
-        
+        batch_size = 1
+        total_batches = 150
+        print(f"evaluating over {total_batches} total batches.")
         eval_loss_total = 0
         
+        loss_list = []
         for i in range(total_batches):
-            start_idx = i * batch_size
-            end_idx = min((i + 1) * batch_size, dataset['trajs'].size(0))
             
             # Format the data properly for this batch
             orig_data = loader.compile_stacked_data(
-                dataset['trajs'][start_idx:end_idx], 
-                dataset['times'][start_idx:end_idx], 
-                dataset['y'][start_idx:end_idx]
+                dataset['trajs'][i:i+1], 
+                dataset['times'][i:i+1], 
+                dataset['y'][i:i+1]
             )
             
             # Get evaluation loss
-            batch_eval_loss, _ = vae_model.eval_step(orig_data)
-            eval_loss_total += batch_eval_loss.item() * (end_idx - start_idx)
+            _, _, batch_eval_loss = vae_model.infer_step(orig_data)
+            loss_list.append(batch_eval_loss.item())
         
         # Calculate average evaluation loss
-        eval_loss = eval_loss_total / dataset['trajs'].size(0)
+        eval_loss = np.mean(loss_list)
+        print(f"Logs: Training: autoencoder: total loss evaluated: {eval_loss}")
 
     # Update model parameters with training results
     model_params['epochs'] += _epochs

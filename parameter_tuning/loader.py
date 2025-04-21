@@ -356,7 +356,7 @@ def compile_stacked_data(x, y, meta):
     return obs
 
 def reverse_traj(input_tensor):
-    return input_tensor
+    # return input_tensor
     """
     Reverses the sequence dimension of the input tensor.
     
