@@ -60,7 +60,7 @@ class VAE(nn.Module):
         # During training, use all dimensions for reconstruction loss
         # Both traj and reconstruction should be [batch_size, seq_len, 6]
         # TODO: revert loss to all 6 dimensions, remove the 0.1 multiplier on beta.
-        recon_loss = self.loss_fn(reconstruction[:, :, 0:1], traj[:, :, 0:1])
+        recon_loss = self.loss_fn(reconstruction[:, :, 0:2], traj[:, :, 0:2])
         KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         # return recon_loss, recon_loss, KLD
         # print(f"recon loss: {recon_loss}")
@@ -103,9 +103,9 @@ class VAE(nn.Module):
             reversed_data = loader.reverse_traj(input_data)
             
             # Run model inference
-            # print("input data:", reversed_data)
+            print("input data:", reversed_data)
             reconstruction, mu, log_var, z = self.forward(reversed_data)     
-            # print("reconstruction:", reconstruction)       
+            print("reconstruction:", reconstruction)       
             # print("latent z:", z)
         return reconstruction, z, self.eval_loss_fn(input_data, reconstruction)
         

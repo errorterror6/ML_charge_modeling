@@ -380,45 +380,48 @@ def reverse_traj(input_tensor):
     else:
         raise ValueError(f"Unexpected input shape: {input_tensor.shape}. Expected shape [batch_size, seq_length, input_dim] or [batch_size, seq_length, 1, input_dim]")
     
-def interpolate_trajectory(input_tensor, n_time):
+def interpolate_traj(input_tensor: torch.Tensor, new_time: torch.Tensor) -> torch.Tensor:
     """
-    Interpolate traj values at new time points given an input tensor.
-    
-    Parameters:
-      input_tensor (np.ndarray): Array of shape [1, x, 2] where each element is (traj, time).
-      new_time (np.ndarray or list): (1, 70) 70 new time points.
-      
-    Returns:
-      np.ndarray: New tensor of shape [1, 70, 2] with interpolated traj and corresponding new_time.
+    Linearly interpolate a trajectory onto new time points.
+
+    Parameters
+    ----------
+    input_tensor : torch.Tensor
+        Shape [1, N, 2]  (N ≤ 70).  last dim = [trajectory, time_stamp].
+    new_time : torch.Tensor
+        1‑D tensor of target times (e.g. 1000 values produced with np.linspace
+        and then converted to torch).  May live on any device.
+
+    Returns
+    -------
+    torch.Tensor
+        Shape [1, len(new_time), 1] – interpolated trajectory values.
     """
-    # Remove batch dimension; now data is of shape [x, 2]
-    data = input_tensor[0]
-    
-    # Extract trajectory and time values.
-    traj = data[:, 0]
-    time_orig = data[:, 1]
-    
-    new_time = n_time.squeeze()
-    
-    # Ensure the time values are sorted. If not, sort them along with traj.
-    if not np.all(np.diff(time_orig) >= 0):
-        sorted_indices = np.argsort(time_orig)
-        time_orig = time_orig[sorted_indices]
-        traj = traj[sorted_indices]
-    
-    # Use np.interp to interpolate new traj values at new_time points.
-    # np.interp performs constant extrapolation using the first or last value if new_time points
-    # are outside the range [time_orig.min(), time_orig.max()].
-    new_traj = np.interp(new_time, time_orig, traj, left=traj[0], right=traj[-1])
-    
-    # Combine interpolated traj with new_time (each as a column)
-    # This yields an array of shape [70, 2]
-    interpolated_data = np.stack([new_traj, new_time], axis=-1)
-    
-    # Reshape to add back the batch dimension, resulting in shape [1, 70, 2]
-    new_tensor = interpolated_data[np.newaxis, ...]
-    
-    return new_tensor
+    # Split and flatten to 1‑D
+    traj = input_tensor[0, :, 0]          # [N]
+    t     = input_tensor[0, :, 1]          # [N]
+
+    # Ensure chronological order
+    order = torch.argsort(t)
+    t, traj = t[order], traj[order]
+
+    # Find the insertion positions of each new_time point
+    idx_upper = torch.searchsorted(t, new_time, right=True)          # [M]
+    idx_lower = torch.clamp(idx_upper - 1, 0, len(t) - 1)
+
+    # Gather neighbouring sample pairs
+    t0, t1       = t[idx_lower],  t[torch.clamp(idx_upper, 0, len(t) - 1)]
+    traj0, traj1 = traj[idx_lower], traj[torch.clamp(idx_upper, 0, len(t) - 1)]
+
+    # Linear weights (avoid /0 when t0==t1, which happens outside the data range)
+    denom  = torch.where(t1 == t0, torch.ones_like(t1), t1 - t0)
+    weight = (new_time - t0) / denom
+
+    # Interpolate
+    interp = traj0 + weight * (traj1 - traj0)                        # [M]
+
+    # Shape to [1, M, 1] and return on same device as new_time
+    return interp.unsqueeze(0).unsqueeze(-1)
 
 def save_model_params(model_params=parameters.model_params):
     #save model params as json file
