@@ -158,14 +158,16 @@ def modify_data():
     train_trajs = parameters.dataset['train_trajs']
     train_times = parameters.dataset['train_times']
     
+    
     new_trajs, new_times = create_missing_data(train_trajs, train_times, 
                                               random_drops=parameters.dataset['drop_number'], 
                                               drop_array=parameters.dataset['missing_idx'])
 
-    if parameters.trainer == 'B-VAE':
+    if parameters.trainer == 'B-VAE' or parameters.trainer == 'RNN-VAE' or parameters.trainer == 'LSTM-VAE':
         # Use our improved remove_nan function which handles correspondence between datasets
         print("Removing NaN values from trajectories...")
         filtered_trajs = remove_nan(new_trajs)
+        parameters.model_params['sequence_size'] -= parameters.dataset['drop_number']
         
         # Apply the same masking logic to times
         print("Removing corresponding time points...")

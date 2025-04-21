@@ -77,8 +77,8 @@ model_params = {
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.
     # NOTE: due a bug, total_epochs_Train must be greater than 14.
-    'total_epochs_train': 500,
-    'epochs_per_train': 50,
+    'total_epochs_train': 1000,
+    'epochs_per_train': 200,
     'epochs': 0, # a record of the epochs
     'loss': [], # loss = KL_loss + MSE loss
     'loss_thresh': 0.00001,
@@ -95,10 +95,15 @@ model_params = {
     'desc': "default_desc",
     'folder': "saves",
 
+    #automated
+    'sequence_size': 70,
+    
     #free to use memory for debugging only
     'debug': 1,
     'debug_list': [],
     'debug_list2': []
+    
+    
 }
 
 

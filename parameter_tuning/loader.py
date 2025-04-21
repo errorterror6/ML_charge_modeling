@@ -10,6 +10,7 @@ from matplotlib.colors import Normalize
 
 from scipy.interpolate import splrep, splev
 from scipy.signal import savgol_filter
+from typing import Literal, Optional
 
 import torch, math
 
@@ -302,7 +303,7 @@ def get_formatted_data(d=parameters.dataset, m=parameters.model_params):
     Returns:
         tuple: train_loader, val_loader, data
     """
-    data = shjnn.CustomDataset(d['trajs'], d['times'], d['y'])
+    data = shjnn.CustomDataset(d['train_trajs'], d['train_times'], d['y'])
     train_size = int(0.8 * len(data))  # NOTE: change to 0.8 for 80/20 split
 
     val_size = int(0.2 * len(data))
@@ -380,8 +381,6 @@ def reverse_traj(input_tensor):
     else:
         raise ValueError(f"Unexpected input shape: {input_tensor.shape}. Expected shape [batch_size, seq_length, input_dim] or [batch_size, seq_length, 1, input_dim]")
     
-import torch
-from typing import Literal, Optional
 
 def interpolate_traj(
     input_tensor: torch.Tensor,

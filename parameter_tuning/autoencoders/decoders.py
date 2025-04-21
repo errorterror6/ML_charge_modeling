@@ -68,7 +68,7 @@ class RNNDecoder(DecoderBase):
     def __init__(self, m=parameters.model_params, v=parameters.vae_params):
         super(RNNDecoder, self).__init__(m, v)
         hidden_dim = v['rnn_nhidden']
-        seq_len = 70  # Default sequence length, can be passed as parameter
+        seq_len = m['sequence_size']  # Default sequence length, can be passed as parameter
         
         # Initial hidden state generator
         self.latent_to_hidden = nn.Linear(self.latent_dim, hidden_dim)
@@ -135,7 +135,7 @@ class LSTMDecoder(DecoderBase):
     def __init__(self, m=parameters.model_params, v=parameters.vae_params):
         super(LSTMDecoder, self).__init__(m, v)
         hidden_dim = v['rnn_nhidden']
-        seq_len = 70  # Default sequence length, can be passed as parameter
+        seq_len = m['sequence_size']  # Default sequence length, can be passed as parameter
         
         # Initial hidden state generator
         self.latent_to_hidden = nn.Linear(self.latent_dim, hidden_dim)

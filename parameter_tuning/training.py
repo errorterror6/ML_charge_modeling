@@ -205,8 +205,8 @@ def autoencoder_training_loop(n_epochs, model_params=parameters.model_params, da
             
             # Format the data properly for this batch
             orig_data = loader.compile_stacked_data(
-                dataset['trajs'][i:i+1], 
-                dataset['times'][i:i+1], 
+                dataset['train_trajs'][i:i+1], 
+                dataset['train_times'][i:i+1], 
                 dataset['y'][i:i+1]
             )
             

@@ -309,7 +309,6 @@ class VAE(nn.Module):
             """
             # Extract data from dataset - use original data without missing points
             trajectories = dataset['trajs']  # Original data (with no missing points)
-            time_points = dataset['times']   # Original time points
             metadata = dataset['y']          # Contains parameters like intensity, bias, delay
             
             train_trajs = dataset['train_trajs']  # Trajectories with missing data points
