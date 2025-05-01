@@ -367,8 +367,8 @@ class RNN(nn.Module):
     
     def format_output(pred_x, target_timesteps=1000):
         """             
-        Extrapolates the pred_x tensor to a specified target length using linear interpolation
-        between known time points.
+        Extrapolates the pred_x tensor to a specified target length using the same
+        robust linear interpolation approach as interpolate_traj in loader.py.
         
         Args:
             pred_x: A PyTorch tensor of shape torch.Size([1, initial_timesteps, 1]).
@@ -385,32 +385,57 @@ class RNN(nn.Module):
             raise ValueError("target_timesteps must be greater than the original timesteps for extrapolation.")
         
         original_timesteps = pred_x.shape[1]
-        pred_x_extrapolated = torch.zeros(1, target_timesteps, 1)  # Initialize with zeros
+        device = pred_x.device
         
-        # Calculate the scaling factor between original and target timesteps
-        scale_factor = original_timesteps / target_timesteps
+        # Create a source tensor with trajectory values and equidistant timestamps
+        # Format: [1, original_timesteps, 2] where [:,:,0] is values and [:,:,1] is timestamps
+        source_times = torch.linspace(0, 1, original_timesteps, device=device)
+        source_tensor = torch.cat((pred_x, source_times.unsqueeze(0).unsqueeze(-1)), dim=2)
         
-        for j in range(target_timesteps):
-            # Calculate the exact position in the original time scale
-            original_pos = j * scale_factor
-            
-            # Get the indices of the two nearest points in the original sequence
-            lower_idx = int(original_pos)
-            upper_idx = min(lower_idx + 1, original_timesteps - 1)
-            
-            # If we're exactly on a known point or beyond the range, no interpolation needed
-            if lower_idx >= original_timesteps - 1:
-                pred_x_extrapolated[:, j, :] = pred_x[:, original_timesteps - 1, :]
-            elif lower_idx == original_pos:
-                pred_x_extrapolated[:, j, :] = pred_x[:, lower_idx, :]
-            else:
-                # Calculate interpolation weight (how far we are between the two known points)
-                weight = original_pos - lower_idx
-                
-                # Linear interpolation: value = (1-w) * v1 + w * v2
-                pred_x_extrapolated[:, j, :] = (1 - weight) * pred_x[:, lower_idx, :] + weight * pred_x[:, upper_idx, :]
+        # Create target timestamp tensor
+        new_time = torch.linspace(0, 1, target_timesteps, device=device)
         
-        return pred_x_extrapolated
+        # Extract trajectory and timestamps from source tensor
+        traj = source_tensor[0, :, 0].to(device)
+        t_raw = source_tensor[0, :, 1].to(device)
+        
+        # Filter out invalid values
+        valid_mask = torch.isfinite(traj) & torch.isfinite(t_raw)
+        traj, t = traj[valid_mask], t_raw[valid_mask]
+        
+        if len(t) < 2:
+            raise ValueError("Need at least two valid timestamps for interpolation")
+        
+        # Sort by time and remove duplicates
+        sort_idx = torch.argsort(t)
+        t, traj = t[sort_idx], traj[sort_idx]
+        
+        # Keep first occurrence of each time stamp
+        keep = torch.ones_like(t, dtype=torch.bool)
+        keep[1:] = t[1:] != t[:-1]
+        t, traj = t[keep], traj[keep]
+        
+        # Find indices for interpolation
+        idx_upper = torch.searchsorted(t, new_time, right=True)
+        idx_lower = torch.clamp(idx_upper - 1, 0, len(t) - 1)
+        
+        t0, t1 = t[idx_lower], t[torch.clamp(idx_upper, 0, len(t) - 1)]
+        traj0, traj1 = traj[idx_lower], traj[torch.clamp(idx_upper, 0, len(t) - 1)]
+        
+        # Calculate weights and interpolate
+        same = (t1 == t0)
+        denom = torch.where(same, torch.ones_like(t1), t1 - t0)
+        w = (new_time - t0) / denom
+        interp = traj0 + w * (traj1 - traj0)
+        
+        # Handle extrapolation (use "hold" policy by default)
+        left_of_range = new_time < t[0]
+        right_of_range = new_time > t[-1]
+        interp[left_of_range] = traj[0]
+        interp[right_of_range] = traj[-1]
+        
+        # Return in the expected shape [1, target_timesteps, 1]
+        return interp.unsqueeze(0).unsqueeze(-1)
 
     def save_model(self, model_params):
         # save model params as json file
