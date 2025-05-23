@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parameters.model_params['desc'] = input("Enter a description: ")
     drop_data = input("run with missing data? (y/n): ")
     parameters.trainer = input("Enter the trainer to use (B-VAE, RNN, LSTM, MLP-VAE, RNN-VAE, LSTM-VAE): ")
-    
+    stochastic = input("run with stochastic noise? (y/n): ")
     print("Logs: Main: Using trainer: ", parameters.trainer)
     
 
@@ -37,7 +37,10 @@ if __name__ == '__main__':
     else:
         drop_data = False
     init.load_data(drop_data=drop_data)
-    
+    if stochastic == 'y':
+        print("Logs: before adding: ", parameters.dataset['train_trajs'][1][0:20])
+        loader.add_stochastic_noise(parameters.dataset['stochastic_level'])
+        print("Logs: after adding: ", parameters.dataset['train_trajs'][1][0:20])
     #testing code.
     # train, val, data = loader.get_formatted_data()
     # for x, y, meta in train:
@@ -65,7 +68,6 @@ if __name__ == '__main__':
             print("Logs: Main: Invalid trainer. Exiting.")
             exit(1)
             
-    
             
     time_start = time.time()    
         

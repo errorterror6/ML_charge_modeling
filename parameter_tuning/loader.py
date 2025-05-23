@@ -24,6 +24,8 @@ import sys
 sys.path.append('../libs/')
 import shjnn
 
+import random
+
 '''
 @title: load_data
 @description: loads data from raw files into the specified dataset struct. typically parameters.dataset (in parameters.py)
@@ -632,3 +634,18 @@ def load_model(model_params):
         print("Logs: Loader: load_model: no model params found, loading model without model params.")
     parameters.model.load_model(model_params, path)
 
+def add_stochastic_noise(noise_level=1):
+    """
+    Add stochastic noise to the training dataset.
+    Args:
+        noise_level (float): The level of noise to add.
+    """
+    train_trajs = parameters.dataset['train_trajs']
+    # shape is [150, 70, 1]
+    random.seed(42)
+
+    trajs = parameters.dataset['train_trajs']
+    noise = torch.randn_like(trajs) * noise_level
+    
+    # Add noise and explicitly reassign to ensure the change is stored
+    parameters.dataset['train_trajs'] = trajs + noise.to(parameters.device)

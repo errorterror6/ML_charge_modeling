@@ -30,7 +30,7 @@ dataset = {
     # if both options are populated, random drops will be prioritised with drop_number.
     'missing_idx': None,
     'drop_number': 20,
-    
+    'stochastic_level': 0.1, # stochastic noise level
 }
 
 #sijin
