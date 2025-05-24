@@ -523,6 +523,7 @@ def save_parameters():
         parameters.model, 
         parameters.rnn, 
         parameters.b_vae, 
+        parameters.load_check,
         parameters.model_params,
         parameters.vae_params,
         parameters.records,
