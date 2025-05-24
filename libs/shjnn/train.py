@@ -12,7 +12,8 @@ import torch
 from torchdiffeq import odeint
 
 
-def make_train_step(dynamics_func, recognition_network, decoder, optimizer, device, noise_std=0.3, beta=1.0):
+
+def make_train_step(dynamics_func, recognition_network, decoder, optimizer, device, noise_std=0.3, beta=1.0, stochastic_noise=0.0):
     """
     Create a training step function.
     
@@ -27,6 +28,7 @@ def make_train_step(dynamics_func, recognition_network, decoder, optimizer, devi
         device (torch.device): Device to run computations on
         noise_std (float): Standard deviation of observation noise
         beta (float): KL divergence weight in the loss function
+        stochastic_noise(float): dynamic stochastic noise scaling factor, around mean 0 var 1.
         
     Returns:
         function: Training step function that takes trajectory and time inputs
@@ -57,13 +59,15 @@ def make_train_step(dynamics_func, recognition_network, decoder, optimizer, devi
         hidden_state = recognition_network.initHidden().to(device)
         
         # Process trajectory in reverse order
+        stoch_noise = torch.randn_like(trajectory) * stochastic_noise
+        trajectory_copy = trajectory + stoch_noise.to(device)
         for t in reversed(range(trajectory.size(1))):
             # Get trajectory sample at time t
-            observation = trajectory[:, t, :]
-            
+            observation = trajectory_copy[:, t, :]
+
             # Process through recognition network
             output, hidden_state = recognition_network.forward(observation, hidden_state)
-        
+
         # --- Infer initial latent state ---
         
         # Split recognition output into mean and log-variance
