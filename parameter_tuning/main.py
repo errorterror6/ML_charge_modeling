@@ -5,9 +5,13 @@ import loader
 import parameters
 import training
 import init
+import torch
 
 import sys
 import time
+
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
 
 if __name__ == '__main__':
     
@@ -23,7 +27,7 @@ if __name__ == '__main__':
     parameters.model_params['desc'] = input("Enter a description: ")
     drop_data = input("run with missing data? (y/n): ")
     parameters.trainer = input("Enter the trainer to use (B-VAE, RNN, LSTM, MLP-VAE, RNN-VAE, LSTM-VAE): ")
-    stochastic = input("run with stochastic noise? (y/n): ")
+    stochastic = input("run with static stochastic noise? (y/n): ")
     print("Logs: Main: Using trainer: ", parameters.trainer)
     
 
@@ -38,9 +42,7 @@ if __name__ == '__main__':
         drop_data = False
     init.load_data(drop_data=drop_data)
     if stochastic == 'y':
-        print("Logs: before adding: ", parameters.dataset['train_trajs'][1][0:20])
         loader.add_stochastic_noise(parameters.dataset['stochastic_level'])
-        print("Logs: after adding: ", parameters.dataset['train_trajs'][1][0:20])
     #testing code.
     # train, val, data = loader.get_formatted_data()
     # for x, y, meta in train:

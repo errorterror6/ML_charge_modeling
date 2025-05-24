@@ -51,7 +51,7 @@ def B_VAE_training_loop(n_epochs, model_params=parameters.model_params, dataset=
 
     # run training for epochs, return loss
     # try:
-    _epochs, _loss, _MSE_loss, _KL_loss = shjnn.train(func, rec, dec, optim, trajs[:], times[:], n_epochs, n_batch, device, beta)
+    _epochs, _loss, _MSE_loss, _KL_loss = shjnn.train(func, rec, dec, optim, trajs[:], times[:], n_epochs, n_batch, device, beta, stochastic_noise=model_params['stochastic_level_dynamic'])
     print('Logs: training: B_VAE_training_loop: Try')
     # print('loss', _loss, 'epochs', _epochs, 'MSE_loss', _MSE_loss, 'KL_loss', _KL_loss)
     
