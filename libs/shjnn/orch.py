@@ -25,7 +25,7 @@ from torch.utils.data import DataLoader
 
 def train(dynamics_func, recognition_network, decoder, optimizer, 
           trajectories, time_points, num_epochs, batch_size, 
-          device, beta=None, save_checkpoint=None):
+          device, beta=None, save_checkpoint=None, stochastic_noise=0.0):
     """
     Main training loop for the SHJNN model.
     
@@ -64,14 +64,14 @@ def train(dynamics_func, recognition_network, decoder, optimizer,
     if beta is not None:
         train_step = make_train_step(
             dynamics_func, recognition_network, decoder, 
-            optimizer, device, beta=beta
+            optimizer, device, beta=beta, stochastic_noise=stochastic_noise
         )
     else:
         train_step = make_train_step(
             dynamics_func, recognition_network, decoder, 
-            optimizer, device
+            optimizer, device, stochastic_noise=stochastic_noise
         )
-    
+
     # Store loss values during training
     loss_history = []
     mse_loss_history = []
