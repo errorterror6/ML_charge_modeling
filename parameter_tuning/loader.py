@@ -516,24 +516,31 @@ def save_parameters():
     import pickle
     
     folder = parameters.model_params['folder']
+    dumps = [
+        parameters.dataset, 
+        parameters.dataset_PV, 
+        parameters.trainer, 
+        parameters.model, 
+        parameters.rnn, 
+        parameters.b_vae, 
+        parameters.model_params,
+        parameters.vae_params,
+        parameters.records,
+        parameters.device,
+        parameters.amp,
+        parameters.freq,
+        parameters.adaptive_training,
+        parameters.save,
+        parameters.split,
+        parameters.gridsearch
+    ]
     if not os.path.exists(folder + '/model'):
         os.makedirs(folder + '/model')
     with open(folder + '/model/parameters.pkl', 'wb') as f:
-        pickle.dump(parameters, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(dumps, f, protocol=pickle.HIGHEST_PROTOCOL)
         
 def load_parameters():
-    #load the parameters file.
-    import os
-    import pickle
-    
-    folder = parameters.model_params['folder']
-    path = folder + '/model/parameters.pkl'
-    if not os.path.exists(path):
-        print("Logs: Loader: load_parameters: No parameters file found.")
-        return None
-    with open(path, 'rb') as f:
-        parameters = pickle.load(f)
-        return parameters
+    pass
 
 def save_model_params(model_params=parameters.model_params):
     #below code is deprecated. This function redirects to save_parameters.
