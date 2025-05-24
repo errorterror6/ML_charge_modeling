@@ -30,7 +30,8 @@ dataset = {
     # if both options are populated, random drops will be prioritised with drop_number.
     'missing_idx': None,
     'drop_number': 20,
-    'stochastic_level': 0.1, # stochastic noise level
+    'stochastic_level': 0.1, # stochastic noise level static.
+    
 }
 
 #sijin
@@ -73,6 +74,8 @@ model_params = {
     'func': None,
     'rec': None,
     'dec': None,
+    
+    'stochastic_level_dynamic': 0.1, # stochastic noise level dynamic.
 
     # training params
     # TODO: doesn't make too much sense for separate epochs per train and total epochs.

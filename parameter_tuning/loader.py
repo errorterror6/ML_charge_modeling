@@ -642,7 +642,6 @@ def add_stochastic_noise(noise_level=1):
     """
     train_trajs = parameters.dataset['train_trajs']
     # shape is [150, 70, 1]
-    random.seed(42)
 
     trajs = parameters.dataset['train_trajs']
     noise = torch.randn_like(trajs) * noise_level
