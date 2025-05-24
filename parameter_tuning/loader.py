@@ -510,7 +510,35 @@ def interpolate_traj(
     # print(f"interp: {interp.squeeze()[0:100]}")
     return interp.unsqueeze(0).unsqueeze(-1)
 
+def save_parameters():
+    #pickle dump the parameters file.
+    import os
+    import pickle
+    
+    folder = parameters.model_params['folder']
+    if not os.path.exists(folder + '/model'):
+        os.makedirs(folder + '/model')
+    with open(folder + '/model/parameters.pkl', 'wb') as f:
+        pickle.dump(parameters, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
+def load_parameters():
+    #load the parameters file.
+    import os
+    import pickle
+    
+    folder = parameters.model_params['folder']
+    path = folder + '/model/parameters.pkl'
+    if not os.path.exists(path):
+        print("Logs: Loader: load_parameters: No parameters file found.")
+        return None
+    with open(path, 'rb') as f:
+        parameters = pickle.load(f)
+        return parameters
+
 def save_model_params(model_params=parameters.model_params):
+    #below code is deprecated. This function redirects to save_parameters.
+    save_parameters()
+    return
     #save model params as json file
     folder = model_params['folder']
     epoch = model_params['epochs']
