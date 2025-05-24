@@ -16,7 +16,7 @@ torch.cuda.manual_seed(0)
 if __name__ == '__main__':
     
     
-
+    parameters.load_check = True
     parameters.model_params['name'] = input("Enter a name: ")
     if (parameters.model_params['name'] == 'clear'):
         loader.clear_saves()

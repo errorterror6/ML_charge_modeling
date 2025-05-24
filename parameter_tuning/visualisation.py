@@ -373,7 +373,7 @@ def compile_learning_gif(model_params=parameters.model_params, display=True):
     #     display.display(html)
 
 
-def sweep_latent_adaptives(model_params, dataset):
+def sweep_latent_adaptives(model_params=parameters.model_params, dataset=parameters.dataset, do_save=False, do_show=False):
     """
     Generate visualizations for all latent dimensions.
     
@@ -394,10 +394,10 @@ def sweep_latent_adaptives(model_params, dataset):
         The function delegates to sweep_latent_adaptive for each dimension
     """
     for dim_idx in range(model_params['latent_dim']):
-        sweep_latent_adaptive(model_params, dataset, dim_idx)
+        sweep_latent_adaptive(model_params, dataset, dim_idx, do_save, do_show)
 
 
-def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
+def sweep_latent_adaptive(model_params, dataset, latent_dim_number, save=False, show=False):
     """
     Visualize the effect of varying a specific latent dimension.
     
@@ -540,7 +540,11 @@ def sweep_latent_adaptive(model_params, dataset, latent_dim_number):
     plt.tight_layout()
 
     # Save the figure
-    save_dir = model_params['folder'] + '/latent_dims'
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    fig.savefig(save_dir + f'/epoch_{epoch_num}_dim_{latent_dim_number}.png', dpi=300)
+    if show:
+        plt.show()
+    if save:
+        save_dir = model_params['folder'] + '/latent_dims'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        fig.savefig(save_dir + f'/epoch_{epoch_num}_dim_{latent_dim_number}.png', dpi=300)
+    

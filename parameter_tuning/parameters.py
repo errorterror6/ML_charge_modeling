@@ -44,6 +44,7 @@ trainer = 'B-VAE'
 model = None
 rnn = None
 b_vae = None
+load_check = False
 
 
 #tune hyper-params here.
